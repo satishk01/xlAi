@@ -1,0 +1,293 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1" 
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+           xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0" 
+           xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides" 
+           xsi:type="TaskPaneApp">
+
+  <!-- Begin Basic Settings: Add-in metadata, used for all versions of Office unless override provided. -->
+  <Id>12345678-1234-1234-1234-123456789012</Id>
+  <Version>1.0.0.0</Version>
+  <ProviderName>Excel-Ollama AI Plugin</ProviderName>
+  <DefaultLocale>en-US</DefaultLocale>
+  
+  <!-- The display name of your add-in. Used on the store and various places of the Office UI such as the add-ins dialog. -->
+  <DisplayName DefaultValue="Ollama AI Analysis" />
+  <Description DefaultValue="AI-powered data analysis using local Ollama models directly in Excel." />
+  
+  <!-- Icon for your add-in. Used on installation screens and the add-ins dialog. -->
+  <IconUrl DefaultValue="https://localhost:3000/assets/icon-32.png" />
+  <HighResolutionIconUrl DefaultValue="https://localhost:3000/assets/icon-64.png" />
+  
+  <!-- Domains that will be allowed when navigating to them from the add-in. -->
+  <AppDomains>
+    <AppDomain>https://localhost:3000</AppDomain>
+  </AppDomains>
+  
+  <!-- End Basic Settings. -->
+
+  <!-- Begin TaskPane Mode integration. This section is used if there are no VersionOverrides or if the Office client version does not support add-in commands. -->
+  <Hosts>
+    <Host Name="Workbook" />
+  </Hosts>
+  
+  <DefaultSettings>
+    <SourceLocation DefaultValue="https://localhost:3000/taskpane.html" />
+  </DefaultSettings>
+  
+  <!-- End TaskPane Mode integration. -->
+
+  <Permissions>ReadWriteDocument</Permissions>
+
+  <!-- Begin Add-in Commands Mode integration. -->
+  <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="VersionOverridesV1_0">
+
+    <!-- The Hosts node is required. -->
+    <Hosts>
+      <!-- Each host can have a different set of commands. -->
+      <!-- Excel host is Workbook, Word host is Document, and PowerPoint host is Presentation. -->
+      <!-- Make sure the hosts you override match the hosts declared in the top level section. -->
+      <Host xsi:type="Workbook">
+        <!-- Form factor. Currently only DesktopFormFactor is supported. -->
+        <DesktopFormFactor>
+          <!-- "This code enables a customizable message to be displayed when the add-in is loaded successfully upon individual install." -->
+          <GetStarted>
+            <!-- Title of the Getting Started callout. resid points to a ShortString resource -->
+            <Title resid="GetStarted.Title"/>
+            <!-- Description of the Getting Started callout. resid points to a LongString resource -->
+            <Description resid="GetStarted.Description"/>
+            <!-- Point to a url resource which details how the add-in should be used. -->
+            <LearnMoreUrl resid="GetStarted.LearnMoreUrl"/>
+          </GetStarted>
+          
+          <!-- Function file is a HTML page that includes the JavaScript where functions for ExecuteAction will be called. 
+               Think of the FunctionFile as the code behind ExecuteFunction. -->
+          <FunctionFile resid="Commands.Url" />
+
+          <!-- Ribbon XML based customization. -->
+          <ExtensionPoint xsi:type="PrimaryCommandSurface">
+            <!-- Use OfficeTab to extend an existing Tab. Use CustomTab to create a new tab. -->
+            <CustomTab id="OllamaAITab">
+              <Group id="DataAnalysisGroup">
+                <Label resid="DataAnalysisGroup.Label" />
+                <Icon>
+                  <bt:Image size="16" resid="Icon.16x16" />
+                  <bt:Image size="32" resid="Icon.32x32" />
+                  <bt:Image size="80" resid="Icon.80x80" />
+                </Icon>
+
+                <!-- Define a control that calls a JavaScript function. -->
+                <Control xsi:type="Button" id="AnalyzeDataButton">
+                  <Label resid="AnalyzeDataButton.Label" />
+                  <Supertip>
+                    <Title resid="AnalyzeDataButton.Label" />
+                    <Description resid="AnalyzeDataButton.Tooltip" />
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.16x16" />
+                    <bt:Image size="32" resid="Icon.32x32" />
+                    <bt:Image size="80" resid="Icon.80x80" />
+                  </Icon>
+                  <Action xsi:type="ExecuteFunction">
+                    <FunctionName>analyzeData</FunctionName>
+                  </Action>
+                </Control>
+                
+                <Control xsi:type="Button" id="TrendAnalysisButton">
+                  <Label resid="TrendAnalysisButton.Label" />
+                  <Supertip>
+                    <Title resid="TrendAnalysisButton.Label" />
+                    <Description resid="TrendAnalysisButton.Tooltip" />
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.16x16" />
+                    <bt:Image size="32" resid="Icon.32x32" />
+                    <bt:Image size="80" resid="Icon.80x80" />
+                  </Icon>
+                  <Action xsi:type="ExecuteFunction">
+                    <FunctionName>trendAnalysis</FunctionName>
+                  </Action>
+                </Control>
+                
+                <Control xsi:type="Button" id="PatternDetectionButton">
+                  <Label resid="PatternDetectionButton.Label" />
+                  <Supertip>
+                    <Title resid="PatternDetectionButton.Label" />
+                    <Description resid="PatternDetectionButton.Tooltip" />
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.16x16" />
+                    <bt:Image size="32" resid="Icon.32x32" />
+                    <bt:Image size="80" resid="Icon.80x80" />
+                  </Icon>
+                  <Action xsi:type="ExecuteFunction">
+                    <FunctionName>patternDetection</FunctionName>
+                  </Action>
+                </Control>
+              </Group>
+              
+              <Group id="QueryGroup">
+                <Label resid="QueryGroup.Label" />
+                <Icon>
+                  <bt:Image size="16" resid="Icon.16x16" />
+                  <bt:Image size="32" resid="Icon.32x32" />
+                  <bt:Image size="80" resid="Icon.80x80" />
+                </Icon>
+
+                <Control xsi:type="Button" id="QueryDataButton">
+                  <Label resid="QueryDataButton.Label" />
+                  <Supertip>
+                    <Title resid="QueryDataButton.Label" />
+                    <Description resid="QueryDataButton.Tooltip" />
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.16x16" />
+                    <bt:Image size="32" resid="Icon.32x32" />
+                    <bt:Image size="80" resid="Icon.80x80" />
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <TaskpaneId>ButtonId1</TaskpaneId>
+                    <SourceLocation resid="Taskpane.Url" />
+                  </Action>
+                </Control>
+              </Group>
+              
+              <Group id="ReportsGroup">
+                <Label resid="ReportsGroup.Label" />
+                <Icon>
+                  <bt:Image size="16" resid="Icon.16x16" />
+                  <bt:Image size="32" resid="Icon.32x32" />
+                  <bt:Image size="80" resid="Icon.80x80" />
+                </Icon>
+
+                <Control xsi:type="Button" id="GenerateReportButton">
+                  <Label resid="GenerateReportButton.Label" />
+                  <Supertip>
+                    <Title resid="GenerateReportButton.Label" />
+                    <Description resid="GenerateReportButton.Tooltip" />
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.16x16" />
+                    <bt:Image size="32" resid="Icon.32x32" />
+                    <bt:Image size="80" resid="Icon.80x80" />
+                  </Icon>
+                  <Action xsi:type="ExecuteFunction">
+                    <FunctionName>generateReport</FunctionName>
+                  </Action>
+                </Control>
+                
+                <Control xsi:type="Button" id="CreateDashboardButton">
+                  <Label resid="CreateDashboardButton.Label" />
+                  <Supertip>
+                    <Title resid="CreateDashboardButton.Label" />
+                    <Description resid="CreateDashboardButton.Tooltip" />
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.16x16" />
+                    <bt:Image size="32" resid="Icon.32x32" />
+                    <bt:Image size="80" resid="Icon.80x80" />
+                  </Icon>
+                  <Action xsi:type="ExecuteFunction">
+                    <FunctionName>createDashboard</FunctionName>
+                  </Action>
+                </Control>
+              </Group>
+              
+              <Group id="ConfigGroup">
+                <Label resid="ConfigGroup.Label" />
+                <Icon>
+                  <bt:Image size="16" resid="Icon.16x16" />
+                  <bt:Image size="32" resid="Icon.32x32" />
+                  <bt:Image size="80" resid="Icon.80x80" />
+                </Icon>
+
+                <Control xsi:type="Button" id="ConfigureButton">
+                  <Label resid="ConfigureButton.Label" />
+                  <Supertip>
+                    <Title resid="ConfigureButton.Label" />
+                    <Description resid="ConfigureButton.Tooltip" />
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.16x16" />
+                    <bt:Image size="32" resid="Icon.32x32" />
+                    <bt:Image size="80" resid="Icon.80x80" />
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <TaskpaneId>ButtonId2</TaskpaneId>
+                    <SourceLocation resid="Configure.Url" />
+                  </Action>
+                </Control>
+                
+                <Control xsi:type="Button" id="HelpButton">
+                  <Label resid="HelpButton.Label" />
+                  <Supertip>
+                    <Title resid="HelpButton.Label" />
+                    <Description resid="HelpButton.Tooltip" />
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.16x16" />
+                    <bt:Image size="32" resid="Icon.32x32" />
+                    <bt:Image size="80" resid="Icon.80x80" />
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <TaskpaneId>ButtonId3</TaskpaneId>
+                    <SourceLocation resid="Help.Url" />
+                  </Action>
+                </Control>
+              </Group>
+              
+              <Label resid="CustomTabLabel" />
+            </CustomTab>
+          </ExtensionPoint>
+        </DesktopFormFactor>
+      </Host>
+    </Hosts>
+
+    <!-- You can use resources across hosts and form factors. -->
+    <Resources>
+      <bt:Images>
+        <bt:Image id="Icon.16x16" DefaultValue="https://localhost:3000/assets/icon-16.png" />
+        <bt:Image id="Icon.32x32" DefaultValue="https://localhost:3000/assets/icon-32.png" />
+        <bt:Image id="Icon.80x80" DefaultValue="https://localhost:3000/assets/icon-80.png" />
+      </bt:Images>
+      <bt:Urls>
+        <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://go.microsoft.com/fwlink/?LinkId=276812" />
+        <bt:Url id="Commands.Url" DefaultValue="https://localhost:3000/commands.html" />
+        <bt:Url id="Taskpane.Url" DefaultValue="https://localhost:3000/taskpane.html" />
+        <bt:Url id="Configure.Url" DefaultValue="https://localhost:3000/configure.html" />
+        <bt:Url id="Help.Url" DefaultValue="https://localhost:3000/help.html" />
+      </bt:Urls>
+      <!-- ShortStrings max characters==125. -->
+      <bt:ShortStrings>
+        <bt:String id="GetStarted.Title" DefaultValue="Get started with Ollama AI Analysis!" />
+        <bt:String id="CustomTabLabel" DefaultValue="Ollama AI Analysis" />
+        <bt:String id="DataAnalysisGroup.Label" DefaultValue="Data Analysis" />
+        <bt:String id="QueryGroup.Label" DefaultValue="Natural Language Query" />
+        <bt:String id="ReportsGroup.Label" DefaultValue="Reports &amp; Insights" />
+        <bt:String id="ConfigGroup.Label" DefaultValue="Configuration" />
+        <bt:String id="AnalyzeDataButton.Label" DefaultValue="Analyze Data" />
+        <bt:String id="TrendAnalysisButton.Label" DefaultValue="Trend Analysis" />
+        <bt:String id="PatternDetectionButton.Label" DefaultValue="Pattern Detection" />
+        <bt:String id="QueryDataButton.Label" DefaultValue="Ask Question" />
+        <bt:String id="GenerateReportButton.Label" DefaultValue="Generate Report" />
+        <bt:String id="CreateDashboardButton.Label" DefaultValue="Create Dashboard" />
+        <bt:String id="ConfigureButton.Label" DefaultValue="Configure" />
+        <bt:String id="HelpButton.Label" DefaultValue="Help" />
+      </bt:ShortStrings>
+      <!-- LongStrings max characters==250. -->
+      <bt:LongStrings>
+        <bt:String id="GetStarted.Description" DefaultValue="Your sample add-in loaded successfully. Go to the HOME tab and click the 'Show Taskpane' button to get started." />
+        <bt:String id="AnalyzeDataButton.Tooltip" DefaultValue="Perform AI-powered analysis on the selected data range using Ollama models." />
+        <bt:String id="TrendAnalysisButton.Tooltip" DefaultValue="Analyze trends and patterns in time series data." />
+        <bt:String id="PatternDetectionButton.Tooltip" DefaultValue="Detect seasonal patterns, anomalies, and outliers in your data." />
+        <bt:String id="QueryDataButton.Tooltip" DefaultValue="Ask questions about your data in natural language and get AI-powered insights." />
+        <bt:String id="GenerateReportButton.Tooltip" DefaultValue="Generate comprehensive analysis reports with insights and recommendations." />
+        <bt:String id="CreateDashboardButton.Tooltip" DefaultValue="Create an executive dashboard with key performance indicators." />
+        <bt:String id="ConfigureButton.Tooltip" DefaultValue="Configure Ollama connection settings and plugin preferences." />
+        <bt:String id="HelpButton.Tooltip" DefaultValue="Access help documentation and tutorials." />
+      </bt:LongStrings>
+    </Resources>
+  </VersionOverrides>
+  <!-- End Add-in Commands Mode integration. -->
+
+</OfficeApp>

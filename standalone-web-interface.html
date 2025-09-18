@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel-Ollama AI Analysis - Standalone</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #0078d4 0%, #106ebe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .main-content {
+            padding: 30px;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border-radius: 10px;
+            background: #f8f9fa;
+        }
+        
+        .section h2 {
+            color: #0078d4;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .input-group input, .input-group select, .input-group textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .input-group input:focus, .input-group select:focus, .input-group textarea:focus {
+            outline: none;
+            border-color: #0078d4;
+        }
+        
+        .input-group textarea {
+            resize: vertical;
+            min-height: 120px;
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            flex: 1;
+            min-width: 150px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #0078d4 0%, #106ebe 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,120,212,0.3);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+        }
+        
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40,167,69,0.3);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(108,117,125,0.3);
+        }
+        
+        .status {
+            padding: 15px 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            font-weight: 600;
+            border-left: 4px solid;
+        }
+        
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+            border-left-color: #28a745;
+        }
+        
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-left-color: #dc3545;
+        }
+        
+        .status.info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border-left-color: #17a2b8;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 30px;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #0078d4;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .results {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            white-space: pre-wrap;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            max-height: 500px;
+            overflow-y: auto;
+            line-height: 1.5;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .file-drop {
+            border: 2px dashed #0078d4;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            background: #f8f9ff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .file-drop:hover {
+            background: #e6f3ff;
+            border-color: #106ebe;
+        }
+        
+        .file-drop.dragover {
+            background: #cce7ff;
+            border-color: #0056b3;
+        }
+        
+        .sample-data {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .sample-data h4 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+        
+        .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            color: #6c757d;
+            border-top: 1px solid #e9ecef;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Excel-Ollama AI Analysis</h1>
+            <p>Standalone Web Interface - No Excel Required!</p>
+        </div>
+        
+        <div class="main-content">
+            <!-- Configuration Section -->
+            <div class="section">
+                <h2>⚙️ Configuration</h2>
+                <div class="input-group">
+                    <label for="serverUrl">Ollama Server URL:</label>
+                    <input type="text" id="serverUrl" placeholder="http://your-ec2-ip:3000" value="">
+                </div>
+                <div class="input-group">
+                    <label for="defaultModel">AI Model:</label>
+                    <select id="defaultModel">
+                        <option value="llama2:latest">llama2:latest (Recommended)</option>
+                        <option value="mistral:latest">mistral:latest (Faster)</option>
+                        <option value="codellama:latest">codellama:latest (Code Analysis)</option>
+                        <option value="phi:latest">phi:latest (Lightweight)</option>
+                    </select>
+                </div>
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="testConnection()">🔗 Test Connection</button>
+                    <button class="btn btn-success" onclick="saveConfig()">💾 Save Config</button>
+                </div>
+            </div>
+            
+            <!-- Data Input Section -->
+            <div class="section">
+                <h2>📊 Data Input</h2>
+                <div class="input-group">
+                    <label for="dataInput">Paste your data (CSV format):</label>
+                    <textarea id="dataInput" placeholder="Date,Sales,Product,Region
+2024-01-01,1000,Product A,North
+2024-01-02,1200,Product B,South
+2024-01-03,800,Product A,East
+..."></textarea>
+                </div>
+                
+                <div class="file-drop" onclick="document.getElementById('fileInput').click()">
+                    <p>📁 Click to select CSV file or drag & drop here</p>
+                    <input type="file" id="fileInput" accept=".csv,.txt" style="display: none;" onchange="handleFileSelect(event)">
+                </div>
+                
+                <div class="sample-data">
+                    <h4>💡 Sample Data Available:</h4>
+                    <button class="btn btn-secondary" onclick="loadSampleData('sales')">Sales Data</button>
+                    <button class="btn btn-secondary" onclick="loadSampleData('customer')">Customer Data</button>
+                    <button class="btn btn-secondary" onclick="loadSampleData('financial')">Financial Data</button>
+                </div>
+            </div>
+            
+            <!-- Analysis Section -->
+            <div class="section">
+                <h2>🔍 Analysis</h2>
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="analyzeData('statistical')">📈 Statistical Analysis</button>
+                    <button class="btn btn-primary" onclick="analyzeData('trends')">📊 Trend Analysis</button>
+                    <button class="btn btn-primary" onclick="analyzeData('patterns')">🔍 Pattern Detection</button>
+                </div>
+                
+                <div class="input-group">
+                    <label for="questionInput">Ask a question about your data:</label>
+                    <input type="text" id="questionInput" placeholder="What trends do you see in the sales data?">
+                    <button class="btn btn-success" onclick="askQuestion()" style="margin-top: 10px;">❓ Ask Question</button>
+                </div>
+            </div>
+            
+            <!-- Status and Loading -->
+            <div id="status" class="status info">
+                Ready to analyze your data! Configure the server URL first.
+            </div>
+            
+            <div id="loading" class="loading hidden">
+                <div class="spinner"></div>
+                <p>Processing your request...</p>
+            </div>
+            
+            <!-- Results Section -->
+            <div id="results" class="results hidden"></div>
+        </div>
+        
+        <div class="footer">
+            <p>Excel-Ollama AI Plugin - Standalone Web Interface | No Python Required</p>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        let config = {
+            serverUrl: '',
+            defaultModel: 'llama2:latest'
+        };
+        
+        // Load configuration on page load
+        window.onload = function() {
+            loadConfig();
+            setupDragAndDrop();
+        };
+        
+        function loadConfig() {
+            const savedConfig = localStorage.getItem('ollamaConfig');
+            if (savedConfig) {
+                config = { ...config, ...JSON.parse(savedConfig) };
+                document.getElementById('serverUrl').value = config.serverUrl;
+                document.getElementById('defaultModel').value = config.defaultModel;
+            }
+            
+            // Try to detect server URL from current page
+            if (!config.serverUrl && window.location.hostname !== 'localhost') {
+                config.serverUrl = `http://${window.location.hostname}:3000`;
+                document.getElementById('serverUrl').value = config.serverUrl;
+            }
+        }
+        
+        function saveConfig() {
+            config.serverUrl = document.getElementById('serverUrl').value.trim();
+            config.defaultModel = document.getElementById('defaultModel').value;
+            
+            if (!config.serverUrl) {
+                updateStatus('Please enter a server URL', 'error');
+                return;
+            }
+            
+            localStorage.setItem('ollamaConfig', JSON.stringify(config));
+            updateStatus('Configuration saved successfully!', 'success');
+        }
+        
+        async function testConnection() {
+            if (!config.serverUrl) {
+                updateStatus('Please configure server URL first', 'error');
+                return;
+            }
+            
+            showLoading('Testing connection...');
+            
+            try {
+                const response = await fetch(`${config.serverUrl}/api/ollama/models`);
+                const data = await response.json();
+                
+                if (response.ok && data.models) {
+                    hideLoading();
+                    updateStatus(`✅ Connection successful! Found ${data.models.length} models.`, 'success');
+                } else {
+                    throw new Error('Invalid response from server');
+                }
+            } catch (error) {
+                hideLoading();
+                updateStatus(`❌ Connection failed: ${error.message}`, 'error');
+            }
+        }
+        
+        function setupDragAndDrop() {
+            const dropZone = document.querySelector('.file-drop');
+            
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('dragover');
+            });
+            
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('dragover');
+            });
+            
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('dragover');
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleFile(files[0]);
+                }
+            });
+        }
+        
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        }
+        
+        function handleFile(file) {
+            if (!file.name.toLowerCase().endsWith('.csv') && !file.name.toLowerCase().endsWith('.txt')) {
+                updateStatus('Please select a CSV or TXT file', 'error');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('dataInput').value = e.target.result;
+                updateStatus(`File "${file.name}" loaded successfully!`, 'success');
+            };
+            reader.readAsText(file);
+        }
+        
+        function loadSampleData(type) {
+            let sampleData = '';
+            
+            switch(type) {
+                case 'sales':
+                    sampleData = `Date,Sales,Product,Region,Units
+2024-01-01,1000,Product A,North,50
+2024-01-02,1200,Product B,South,60
+2024-01-03,800,Product A,East,40
+2024-01-04,1500,Product C,West,75
+2024-01-05,900,Product B,North,45
+2024-01-06,1100,Product A,South,55
+2024-01-07,1300,Product C,East,65`;
+                    break;
+                    
+                case 'customer':
+                    sampleData = `Customer_ID,Age,Gender,Purchase_Amount,Category,Satisfaction
+C001,25,Female,150,Electronics,4.5
+C002,34,Male,200,Clothing,4.2
+C003,28,Female,75,Books,4.8
+C004,45,Male,300,Electronics,4.1
+C005,32,Female,120,Clothing,4.6
+C006,29,Male,90,Books,4.3
+C007,38,Female,250,Electronics,4.4`;
+                    break;
+                    
+                case 'financial':
+                    sampleData = `Date,Revenue,Expenses,Profit,Department
+2024-01-01,10000,7000,3000,Sales
+2024-01-02,12000,8000,4000,Marketing
+2024-01-03,8000,6000,2000,Operations
+2024-01-04,15000,9000,6000,Sales
+2024-01-05,9000,7500,1500,Marketing
+2024-01-06,11000,8500,2500,Operations
+2024-01-07,13000,8000,5000,Sales`;
+                    break;
+            }
+            
+            document.getElementById('dataInput').value = sampleData;
+            updateStatus(`Sample ${type} data loaded!`, 'success');
+        }
+        
+        async function analyzeData(analysisType) {
+            const data = parseCSVData();
+            if (!data) return;
+            
+            if (!config.serverUrl) {
+                updateStatus('Please configure server URL first', 'error');
+                return;
+            }
+            
+            showLoading(`Performing ${analysisType} analysis...`);
+            
+            try {
+                const response = await fetch(`${config.serverUrl}/api/ollama/analyze`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        data: data,
+                        analysisType: analysisType,
+                        model: config.defaultModel
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.error || 'Analysis failed');
+                }
+                
+                hideLoading();
+                updateStatus(`✅ ${analysisType} analysis completed!`, 'success');
+                showResults(result.analysis);
+                
+            } catch (error) {
+                hideLoading();
+                updateStatus(`❌ Analysis failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function askQuestion() {
+            const question = document.getElementById('questionInput').value.trim();
+            if (!question) {
+                updateStatus('Please enter a question', 'error');
+                return;
+            }
+            
+            const data = parseCSVData();
+            if (!data) return;
+            
+            if (!config.serverUrl) {
+                updateStatus('Please configure server URL first', 'error');
+                return;
+            }
+            
+            showLoading('Processing your question...');
+            
+            try {
+                const response = await fetch(`${config.serverUrl}/api/ollama/query`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        data: data,
+                        question: question,
+                        model: config.defaultModel
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.error || 'Query failed');
+                }
+                
+                hideLoading();
+                updateStatus('✅ Question answered!', 'success');
+                showResults(`Question: ${question}\n\nAnswer: ${result.answer}`);
+                
+            } catch (error) {
+                hideLoading();
+                updateStatus(`❌ Query failed: ${error.message}`, 'error');
+            }
+        }
+        
+        function parseCSVData() {
+            const csvText = document.getElementById('dataInput').value.trim();
+            if (!csvText) {
+                updateStatus('Please enter or load some data first', 'error');
+                return null;
+            }
+            
+            try {
+                const lines = csvText.split('\n');
+                const headers = lines[0].split(',').map(h => h.trim());
+                const rows = lines.slice(1).map(line => {
+                    const values = line.split(',').map(v => v.trim());
+                    const obj = {};
+                    headers.forEach((header, index) => {
+                        obj[header] = values[index] || '';
+                    });
+                    return obj;
+                });
+                
+                return {
+                    headers: headers,
+                    rows: rows.length,
+                    columns: headers.length,
+                    sample: rows.slice(0, 5),
+                    data: rows
+                };
+            } catch (error) {
+                updateStatus('Error parsing CSV data: ' + error.message, 'error');
+                return null;
+            }
+        }
+        
+        function updateStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+        }
+        
+        function showLoading(message = 'Processing...') {
+            const loadingDiv = document.getElementById('loading');
+            loadingDiv.querySelector('p').textContent = message;
+            loadingDiv.classList.remove('hidden');
+        }
+        
+        function hideLoading() {
+            document.getElementById('loading').classList.add('hidden');
+        }
+        
+        function showResults(results) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.textContent = results;
+            resultsDiv.classList.remove('hidden');
+            resultsDiv.scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>

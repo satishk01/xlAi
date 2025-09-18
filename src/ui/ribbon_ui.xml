@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui" onLoad="OnRibbonLoad">
+  <ribbon>
+    <tabs>
+      <tab id="OllamaAITab" label="Ollama AI Analysis" insertAfterMso="TabHome">
+        
+        <!-- Data Analysis Group -->
+        <group id="DataAnalysisGroup" label="Data Analysis">
+          <button id="AnalyzeDataBtn" 
+                  label="Analyze Data" 
+                  size="large" 
+                  imageMso="ChartInsert"
+                  onAction="OnAnalyzeData"
+                  screentip="Analyze Selected Data"
+                  supertip="Perform AI-powered analysis on the selected data range using Ollama models." />
+          
+          <button id="TrendAnalysisBtn" 
+                  label="Trend Analysis" 
+                  size="normal" 
+                  imageMso="ChartTrendlineLinear"
+                  onAction="OnTrendAnalysis"
+                  screentip="Trend Analysis"
+                  supertip="Analyze trends and patterns in time series data." />
+          
+          <button id="PatternDetectionBtn" 
+                  label="Pattern Detection" 
+                  size="normal" 
+                  imageMso="ChartSeriesLines"
+                  onAction="OnPatternDetection"
+                  screentip="Pattern Detection"
+                  supertip="Detect seasonal patterns, anomalies, and outliers in your data." />
+        </group>
+        
+        <!-- Query Group -->
+        <group id="QueryGroup" label="Natural Language Query">
+          <button id="QueryDataBtn" 
+                  label="Ask Question" 
+                  size="large" 
+                  imageMso="Help"
+                  onAction="OnQueryData"
+                  screentip="Ask Questions About Data"
+                  supertip="Ask questions about your data in natural language and get AI-powered insights." />
+          
+          <editBox id="QuickQueryBox" 
+                   label="Quick Query:" 
+                   sizeString="What trends do you see?"
+                   onChange="OnQuickQuery"
+                   screentip="Quick Query"
+                   supertip="Type a quick question about your data and press Enter." />
+        </group>
+        
+        <!-- Reports Group -->
+        <group id="ReportsGroup" label="Reports &amp; Insights">
+          <button id="GenerateReportBtn" 
+                  label="Generate Report" 
+                  size="large" 
+                  imageMso="FileNewDefault"
+                  onAction="OnGenerateReport"
+                  screentip="Generate Report"
+                  supertip="Generate comprehensive analysis reports with insights and recommendations." />
+          
+          <button id="CreateDashboardBtn" 
+                  label="Create Dashboard" 
+                  size="normal" 
+                  imageMso="ChartInsert"
+                  onAction="OnCreateDashboard"
+                  screentip="Create Dashboard"
+                  supertip="Create an executive dashboard with key performance indicators." />
+          
+          <button id="ExportResultsBtn" 
+                  label="Export Results" 
+                  size="normal" 
+                  imageMso="FileSaveAs"
+                  onAction="OnExportResults"
+                  screentip="Export Results"
+                  supertip="Export analysis results to various formats." />
+        </group>
+        
+        <!-- Configuration Group -->
+        <group id="ConfigGroup" label="Configuration">
+          <dropDown id="ModelSelectionDropdown" 
+                    label="Model:" 
+                    sizeString="llama2:latest"
+                    onAction="OnModelSelection"
+                    screentip="Select Ollama Model"
+                    supertip="Choose which Ollama model to use for analysis.">
+            <item id="llama2" label="llama2:latest" />
+            <item id="codellama" label="codellama:latest" />
+            <item id="mistral" label="mistral:latest" />
+            <item id="phi" label="phi:latest" />
+          </dropDown>
+          
+          <button id="ConfigureBtn" 
+                  label="Configure" 
+                  size="normal" 
+                  imageMso="AdpPrimaryKey"
+                  onAction="OnConfigure"
+                  screentip="Configure Plugin"
+                  supertip="Configure Ollama connection settings and plugin preferences." />
+          
+          <button id="HelpBtn" 
+                  label="Help" 
+                  size="normal" 
+                  imageMso="Help"
+                  onAction="OnHelp"
+                  screentip="Help &amp; Documentation"
+                  supertip="Access help documentation and tutorials." />
+        </group>
+        
+        <!-- Status Group -->
+        <group id="StatusGroup" label="Status">
+          <labelControl id="ConnectionStatusLabel" 
+                        label="Ollama: Disconnected" 
+                        screentip="Connection Status"
+                        supertip="Shows the current connection status to Ollama server." />
+          
+          <button id="RefreshConnectionBtn" 
+                  label="Refresh" 
+                  size="normal" 
+                  imageMso="Refresh"
+                  onAction="OnRefreshConnection"
+                  screentip="Refresh Connection"
+                  supertip="Refresh connection to Ollama server and update model list." />
+        </group>
+        
+      </tab>
+    </tabs>
+  </ribbon>
+</customUI>
