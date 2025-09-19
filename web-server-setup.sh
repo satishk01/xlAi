@@ -41,10 +41,34 @@ EOF
     sudo systemctl enable ollama
     sudo systemctl start ollama
     
-    # Wait and download models
+    # Wait and download models (including advanced AI models)
     sleep 10
+    echo "Downloading standard models..."
     ollama pull llama2:latest
     ollama pull mistral:latest
+    
+    echo "Downloading advanced AI models for enterprise features..."
+    echo "This may take 10-30 minutes depending on your internet connection..."
+    
+    # Download Qwen3 models (for advanced analysis and copilot features)
+    echo "Installing Qwen 2.5 (Standard)..."
+    ollama pull qwen2.5:latest
+    
+    echo "Installing Qwen 2.5 32B (Large model for Copilot analysis)..."
+    ollama pull qwen2.5:32b
+    
+    # Download DeepSeek thinking model
+    echo "Installing DeepSeek R1 (Thinking model)..."
+    ollama pull deepseek-r1:latest
+    
+    # Download additional useful models
+    echo "Installing additional models..."
+    ollama pull codellama:latest
+    ollama pull phi:latest
+    
+    echo "All AI models installed successfully!"
+    echo "Available models:"
+    ollama list
 fi
 
 # Create web server directory
@@ -151,7 +175,7 @@ app.post('/api/ollama/analyze', async (req, res) => {
 
 app.post('/api/ollama/query', async (req, res) => {
     try {
-        const { data, question, model = 'llama2:latest' } = req.body;
+        const { data, question, model = 'qwen2.5:latest' } = req.body;
         
         const prompt = \`
         Based on this data with \${data.rows} rows and \${data.columns} columns:
@@ -186,6 +210,168 @@ app.post('/api/ollama/query', async (req, res) => {
         res.status(500).json({ 
             success: false, 
             error: 'Query failed', 
+            details: error.message 
+        });
+    }
+});
+
+// Advanced AI endpoints for thinking models and copilot analysis
+app.post('/api/ollama/copilot', async (req, res) => {
+    try {
+        const { data, model = 'qwen2.5:32b' } = req.body;
+        
+        const copilotPrompt = \`
+        You are an advanced AI data analyst like GitHub Copilot for Excel. 
+        Provide comprehensive, actionable insights for this dataset.
+        
+        DATASET OVERVIEW:
+        - Rows: \${data.rows}
+        - Columns: \${data.columns}
+        - Headers: \${data.headers.join(', ')}
+        
+        SAMPLE DATA:
+        \${JSON.stringify(data.sample, null, 2)}
+        
+        PROVIDE COPILOT-STYLE ANALYSIS INCLUDING:
+        1. 📊 KEY INSIGHTS & PATTERNS
+        2. 🎯 BUSINESS RECOMMENDATIONS  
+        3. 📈 TREND ANALYSIS
+        4. ⚠️ ANOMALIES & OUTLIERS
+        5. 🔮 PREDICTIVE INSIGHTS
+        6. 💡 OPTIMIZATION SUGGESTIONS
+        7. 📋 NEXT STEPS & ACTION ITEMS
+        
+        Format your response like GitHub Copilot: clear, actionable, with specific insights and recommendations.
+        \`;
+        
+        const response = await axios.post(\`\${OLLAMA_URL}/api/generate\`, {
+            model: model,
+            prompt: copilotPrompt,
+            stream: false,
+            options: {
+                temperature: 0.7,
+                top_p: 0.9
+            }
+        }, {
+            timeout: 180000 // 3 minutes for complex analysis
+        });
+        
+        res.json({
+            success: true,
+            analysis: response.data.response,
+            type: 'copilot',
+            model: model,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        res.status(500).json({ 
+            success: false, 
+            error: 'Copilot analysis failed', 
+            details: error.message 
+        });
+    }
+});
+
+app.post('/api/ollama/thinking', async (req, res) => {
+    try {
+        const { data, question, model = 'deepseek-r1:latest' } = req.body;
+        
+        const thinkingPrompt = \`
+        Think step by step about this data analysis question.
+        
+        DATA CONTEXT:
+        - Dataset: \${data.rows} rows, \${data.columns} columns
+        - Columns: \${data.headers.join(', ')}
+        - Sample: \${JSON.stringify(data.sample, null, 2)}
+        
+        QUESTION: \${question}
+        
+        Please think through this carefully and provide a comprehensive answer. 
+        Use <thinking> tags for your reasoning process, then provide your final answer.
+        \`;
+        
+        const response = await axios.post(\`\${OLLAMA_URL}/api/generate\`, {
+            model: model,
+            prompt: thinkingPrompt,
+            stream: false,
+            options: {
+                temperature: 0.7,
+                top_p: 0.9
+            }
+        }, {
+            timeout: 180000 // 3 minutes for thinking
+        });
+        
+        // Extract final answer (hide thinking process)
+        let finalAnswer = response.data.response;
+        
+        // Remove thinking tags and content
+        if (finalAnswer.includes('<thinking>') && finalAnswer.includes('</thinking>')) {
+            const thinkingEnd = finalAnswer.indexOf('</thinking>') + 12;
+            finalAnswer = finalAnswer.substring(thinkingEnd).trim();
+        }
+        
+        // Clean up any remaining thinking artifacts
+        finalAnswer = finalAnswer.replace(/<think>.*?<\/think>/gs, '');
+        finalAnswer = finalAnswer.replace(/Let me think about this\.\.\./g, '');
+        finalAnswer = finalAnswer.replace(/Thinking:/g, '');
+        
+        res.json({
+            success: true,
+            answer: finalAnswer,
+            question: question,
+            type: 'thinking',
+            model: model,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        res.status(500).json({ 
+            success: false, 
+            error: 'Thinking analysis failed', 
+            details: error.message 
+        });
+    }
+});
+
+app.post('/api/ollama/chart-suggestion', async (req, res) => {
+    try {
+        const { data, model = 'qwen2.5:latest' } = req.body;
+        
+        const chartPrompt = \`
+        Analyze this data structure and recommend the best chart type:
+        
+        Data: \${data.rows} rows, \${data.columns} columns
+        Columns: \${data.headers.join(', ')}
+        
+        Recommend ONE of these chart types and explain why:
+        - column (for comparing categories)
+        - line (for trends over time)
+        - pie (for parts of a whole)
+        - scatter (for correlations)
+        - area (for cumulative data)
+        - bar (for horizontal comparisons)
+        
+        Provide a brief explanation of why this chart type is best for this data.
+        \`;
+        
+        const response = await axios.post(\`\${OLLAMA_URL}/api/generate\`, {
+            model: model,
+            prompt: chartPrompt,
+            stream: false
+        }, {
+            timeout: 60000
+        });
+        
+        res.json({
+            success: true,
+            suggestion: response.data.response,
+            model: model,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        res.status(500).json({ 
+            success: false, 
+            error: 'Chart suggestion failed', 
             details: error.message 
         });
     }
@@ -448,8 +634,20 @@ cat > public/index.html << 'EOF'
             <button class="btn btn-primary" onclick="askQuestion()">
                 ❓ Ask Question
             </button>
+            <button class="btn btn-success" onclick="askAdvancedQuestion()">
+                🧠 Advanced Question (Thinking)
+            </button>
+            <button class="btn btn-success" onclick="doCopilotAnalysis()">
+                🤖 Copilot Analysis
+            </button>
+        </div>
+        
+        <div class="button-group">
             <button class="btn btn-success" onclick="generateReport()">
                 📋 Generate Report
+            </button>
+            <button class="btn btn-primary" onclick="getChartSuggestion()">
+                🎨 Chart Suggestion
             </button>
             <button class="btn btn-secondary" onclick="showConfig()">
                 ⚙️ Configure
@@ -465,8 +663,11 @@ cat > public/index.html << 'EOF'
             <div class="form-group">
                 <label for="defaultModel">Default Model:</label>
                 <select id="defaultModel">
+                    <option value="qwen2.5:latest">qwen2.5:latest (Recommended)</option>
                     <option value="llama2:latest">llama2:latest</option>
                     <option value="mistral:latest">mistral:latest</option>
+                    <option value="deepseek-r1:latest">deepseek-r1:latest (Thinking)</option>
+                    <option value="qwen2.5:32b">qwen2.5:32b (Large)</option>
                     <option value="codellama:latest">codellama:latest</option>
                     <option value="phi:latest">phi:latest</option>
                 </select>
@@ -492,7 +693,9 @@ cat > public/excel-addin.js << 'EOF'
 
 let config = {
     serverUrl: window.location.origin, // Use current server
-    defaultModel: 'llama2:latest'
+    defaultModel: 'qwen2.5:latest', // Updated to use advanced model
+    thinkingModel: 'deepseek-r1:latest',
+    copilotModel: 'qwen2.5:32b'
 };
 
 // Initialize Office.js
@@ -517,6 +720,14 @@ function loadConfig() {
 function saveConfig() {
     config.serverUrl = document.getElementById('serverUrl').value || config.serverUrl;
     config.defaultModel = document.getElementById('defaultModel').value;
+    
+    // Set advanced models based on selection
+    if (config.defaultModel.includes('deepseek')) {
+        config.thinkingModel = config.defaultModel;
+    }
+    if (config.defaultModel.includes('qwen2.5:32b')) {
+        config.copilotModel = config.defaultModel;
+    }
     
     localStorage.setItem('ollamaConfig', JSON.stringify(config));
     updateStatus('Configuration saved successfully!', 'success');
@@ -636,16 +847,121 @@ async function generateReport() {
     }
 }
 
+// Advanced AI functions
+async function doCopilotAnalysis() {
+    try {
+        await Excel.run(async (context) => {
+            const range = context.workbook.getSelectedRange();
+            range.load(['values', 'rowCount', 'columnCount']);
+            await context.sync();
+            
+            if (range.rowCount < 2) {
+                updateStatus('Please select a data range with at least 2 rows (including headers)', 'error');
+                return;
+            }
+            
+            showLoading('🤖 Performing Copilot-style analysis...');
+            
+            const data = processExcelData(range.values);
+            const analysis = await performCopilotAnalysis(data);
+            
+            await writeResultsToSheet(context, analysis, 'Copilot_Analysis');
+            
+            hideLoading();
+            updateStatus('Copilot analysis completed! Check the Copilot_Analysis sheet.', 'success');
+            showResults(analysis);
+        });
+    } catch (error) {
+        hideLoading();
+        updateStatus('Copilot analysis failed: ' + error.message, 'error');
+    }
+}
+
+async function askAdvancedQuestion() {
+    try {
+        const question = prompt('Ask an advanced question (uses thinking model):');
+        if (!question) return;
+        
+        await Excel.run(async (context) => {
+            const range = context.workbook.getSelectedRange();
+            range.load(['values', 'rowCount', 'columnCount']);
+            await context.sync();
+            
+            if (range.rowCount < 2) {
+                updateStatus('Please select a data range first', 'error');
+                return;
+            }
+            
+            showLoading('🧠 Processing with thinking model...');
+            
+            const data = processExcelData(range.values);
+            const response = await performThinkingAnalysis(data, question);
+            
+            await writeResultsToSheet(context, response, 'Advanced_Analysis');
+            
+            hideLoading();
+            updateStatus('Advanced analysis completed! Check the Advanced_Analysis sheet.', 'success');
+            showResults(response);
+        });
+    } catch (error) {
+        hideLoading();
+        updateStatus('Advanced analysis failed: ' + error.message, 'error');
+    }
+}
+
+async function getChartSuggestion() {
+    try {
+        await Excel.run(async (context) => {
+            const range = context.workbook.getSelectedRange();
+            range.load(['values', 'rowCount', 'columnCount']);
+            await context.sync();
+            
+            if (range.rowCount < 2) {
+                updateStatus('Please select a data range first', 'error');
+                return;
+            }
+            
+            showLoading('🎨 Getting AI chart recommendation...');
+            
+            const data = processExcelData(range.values);
+            const suggestion = await getAIChartSuggestion(data);
+            
+            hideLoading();
+            updateStatus('Chart suggestion received!', 'success');
+            showResults(suggestion);
+            
+            // Show suggestion in alert
+            alert(`AI Chart Recommendation:\\n\\n${suggestion.suggestion}`);
+        });
+    } catch (error) {
+        hideLoading();
+        updateStatus('Chart suggestion failed: ' + error.message, 'error');
+    }
+}
+
 async function testConnection() {
     try {
-        showLoading('Testing connection...');
+        showLoading('Testing connection and models...');
         
         const response = await fetch(`${config.serverUrl}/api/ollama/models`);
         const data = await response.json();
         
         if (response.ok && data.models) {
             hideLoading();
-            updateStatus(`Connection successful! Found ${data.models.length} models.`, 'success');
+            
+            // Check for advanced models
+            const models = data.models.map(m => m.name);
+            const hasQwen = models.some(m => m.includes('qwen'));
+            const hasDeepSeek = models.some(m => m.includes('deepseek'));
+            
+            let statusMsg = `Connection successful! Found ${data.models.length} models.`;
+            if (hasQwen && hasDeepSeek) {
+                statusMsg += ' Advanced AI models available!';
+            } else {
+                statusMsg += ' Note: Some advanced models may be missing.';
+            }
+            
+            updateStatus(statusMsg, 'success');
         } else {
             throw new Error('Invalid response from server');
         }
@@ -742,6 +1058,99 @@ async function askOllamaQuestion(data, question) {
     }
 }
 
+// Advanced API functions
+async function performCopilotAnalysis(data) {
+    try {
+        const response = await fetch(`${config.serverUrl}/api/ollama/copilot`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                data: data,
+                model: config.copilotModel
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(result.error || 'Copilot analysis failed');
+        }
+        
+        return {
+            type: 'copilot',
+            analysis: result.analysis,
+            model: result.model,
+            timestamp: result.timestamp
+        };
+    } catch (error) {
+        throw new Error(`Copilot analysis failed: ${error.message}`);
+    }
+}
+
+async function performThinkingAnalysis(data, question) {
+    try {
+        const response = await fetch(`${config.serverUrl}/api/ollama/thinking`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                data: data,
+                question: question,
+                model: config.thinkingModel
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(result.error || 'Thinking analysis failed');
+        }
+        
+        return {
+            type: 'thinking',
+            question: question,
+            answer: result.answer,
+            model: result.model,
+            timestamp: result.timestamp
+        };
+    } catch (error) {
+        throw new Error(`Thinking analysis failed: ${error.message}`);
+    }
+}
+
+async function getAIChartSuggestion(data) {
+    try {
+        const response = await fetch(`${config.serverUrl}/api/ollama/chart-suggestion`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                data: data,
+                model: config.defaultModel
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(result.error || 'Chart suggestion failed');
+        }
+        
+        return {
+            type: 'chart-suggestion',
+            suggestion: result.suggestion,
+            model: result.model,
+            timestamp: result.timestamp
+        };
+    } catch (error) {
+        throw new Error(`Chart suggestion failed: ${error.message}`);
+    }
+}
+
 // Excel worksheet functions
 async function writeResultsToSheet(context, results, sheetName) {
     // Delete existing sheet if it exists
@@ -786,6 +1195,44 @@ function formatResultsForExcel(results) {
     
     let formatted = '';
     
+    // Handle different analysis types
+    if (results.type === 'copilot') {
+        formatted += '🤖 GITHUB COPILOT-STYLE ANALYSIS\n';
+        formatted += '='.repeat(50) + '\n\n';
+        formatted += `📊 DATASET ANALYZED\n`;
+        formatted += `🧠 AI MODEL: ${results.model} (Advanced Reasoning)\n`;
+        formatted += `⏰ GENERATED: ${new Date(results.timestamp).toLocaleString()}\n`;
+        formatted += '='.repeat(50) + '\n\n';
+        formatted += results.analysis + '\n\n';
+        formatted += '💡 This analysis was generated using advanced AI reasoning models\n';
+        formatted += '   similar to GitHub Copilot\\'s analytical capabilities.';
+        return formatted;
+    }
+    
+    if (results.type === 'thinking') {
+        formatted += '🧠 ADVANCED AI ANALYSIS (THINKING MODEL)\n';
+        formatted += '='.repeat(50) + '\n\n';
+        formatted += `❓ QUESTION: ${results.question}\n\n`;
+        formatted += `💡 AI RESPONSE:\n`;
+        formatted += '-'.repeat(30) + '\n';
+        formatted += results.answer + '\n\n';
+        formatted += `🤖 MODEL: ${results.model} (Advanced Thinking)\n`;
+        formatted += `⏰ GENERATED: ${new Date(results.timestamp).toLocaleString()}\n\n`;
+        formatted += '🧠 NOTE: This response was generated using advanced thinking models\n';
+        formatted += '   for deeper reasoning and analysis (thinking process hidden).';
+        return formatted;
+    }
+    
+    if (results.type === 'chart-suggestion') {
+        formatted += '🎨 AI CHART RECOMMENDATION\n';
+        formatted += '='.repeat(40) + '\n\n';
+        formatted += results.suggestion + '\n\n';
+        formatted += `🤖 MODEL: ${results.model}\n`;
+        formatted += `⏰ GENERATED: ${new Date(results.timestamp).toLocaleString()}`;
+        return formatted;
+    }
+    
+    // Handle legacy format
     if (results.title) {
         formatted += `${results.title}\n`;
         formatted += '='.repeat(results.title.length) + '\n\n';
@@ -798,6 +1245,10 @@ function formatResultsForExcel(results) {
     
     if (results.result) {
         formatted += `Analysis Result:\n${results.result}\n\n`;
+    }
+    
+    if (results.analysis) {
+        formatted += `Analysis:\n${results.analysis}\n\n`;
     }
     
     if (results.analyses) {

@@ -103,6 +103,57 @@ sleep 5  # Give it a moment
 
 if curl -s --connect-timeout 10 http://$EC2_PUBLIC_IP:11434/api/tags > /dev/null; then
     echo "✅ External access now works!"
+    
+    # Test advanced models if they exist
+    echo ""
+    echo "Testing advanced AI models..."
+    
+    # Test Qwen 2.5
+    if curl -s http://localhost:11434/api/tags | grep -q "qwen2.5:latest"; then
+        echo "🧪 Testing Qwen 2.5 model..."
+        QWEN_TEST=$(curl -s -X POST http://localhost:11434/api/generate \
+            -H 'Content-Type: application/json' \
+            -d '{"model":"qwen2.5:latest","prompt":"Hello","stream":false}' \
+            --connect-timeout 30)
+        
+        if echo "$QWEN_TEST" | grep -q "response"; then
+            echo "✅ Qwen 2.5 model working"
+        else
+            echo "❌ Qwen 2.5 model test failed"
+        fi
+    fi
+    
+    # Test DeepSeek thinking model
+    if curl -s http://localhost:11434/api/tags | grep -q "deepseek-r1"; then
+        echo "🧪 Testing DeepSeek thinking model..."
+        DEEPSEEK_TEST=$(curl -s -X POST http://localhost:11434/api/generate \
+            -H 'Content-Type: application/json' \
+            -d '{"model":"deepseek-r1:latest","prompt":"Think about 2+2","stream":false}' \
+            --connect-timeout 30)
+        
+        if echo "$DEEPSEEK_TEST" | grep -q "response"; then
+            echo "✅ DeepSeek thinking model working"
+        else
+            echo "❌ DeepSeek thinking model test failed"
+        fi
+    fi
+    
+    # Test large Qwen model
+    if curl -s http://localhost:11434/api/tags | grep -q "qwen2.5:32b"; then
+        echo "🧪 Testing Qwen 2.5 32B (large model)..."
+        echo "   Note: This may take longer due to model size..."
+        QWEN_LARGE_TEST=$(curl -s -X POST http://localhost:11434/api/generate \
+            -H 'Content-Type: application/json' \
+            -d '{"model":"qwen2.5:32b","prompt":"Analyze","stream":false}' \
+            --connect-timeout 60)
+        
+        if echo "$QWEN_LARGE_TEST" | grep -q "response"; then
+            echo "✅ Qwen 2.5 32B model working"
+        else
+            echo "❌ Qwen 2.5 32B model test failed (may need more time/memory)"
+        fi
+    fi
+    
 else
     echo "❌ External access still failed"
     echo ""
@@ -129,6 +180,22 @@ else
     echo "1. Check EC2 Security Group allows port 11434"
     echo "2. Verify your laptop's public IP is allowed"
     echo "3. Try: curl http://$EC2_PRIVATE_IP:11434/api/tags (from another EC2 instance)"
+    echo ""
+    echo "Advanced AI Model Troubleshooting:"
+    echo "=================================="
+    echo "If advanced models are not working:"
+    echo "1. Check available disk space: df -h"
+    echo "2. Check memory usage: free -h"
+    echo "3. Large models (32B) need 16GB+ RAM"
+    echo "4. Restart Ollama: sudo systemctl restart ollama"
+    echo "5. Check Ollama logs: sudo journalctl -u ollama -f"
+    echo ""
+    echo "Model-specific issues:"
+    echo "• DeepSeek R1: Requires 8GB+ RAM for thinking"
+    echo "• Qwen 2.5 32B: Requires 16GB+ RAM for optimal performance"
+    echo "• If models fail to load, try smaller variants:"
+    echo "  - qwen2.5:7b instead of qwen2.5:32b"
+    echo "  - deepseek-r1:1.5b instead of deepseek-r1:latest"
 fi
 
 # Show final status
@@ -148,24 +215,168 @@ echo "Network listening:"
 sudo netstat -tlnp | grep 11434 || sudo ss -tlnp | grep 11434
 
 echo ""
+echo "Checking for web server (port 3000):"
+if sudo netstat -tlnp | grep :3000 || sudo ss -tlnp | grep :3000; then
+    echo "✅ Web server detected on port 3000"
+    
+    # Test web server access
+    if curl -s --connect-timeout 5 http://localhost:3000/health > /dev/null; then
+        echo "✅ Web server health check passed"
+        echo "🌐 Web interface available at: http://$EC2_PUBLIC_IP:3000"
+    else
+        echo "❌ Web server health check failed"
+    fi
+else
+    echo "ℹ️  No web server detected on port 3000"
+    echo "   If you want the web interface, run: ./web-server-setup.sh"
+fi
+
+echo ""
 echo "Available models:"
-curl -s http://localhost:11434/api/tags | grep -o '"name":"[^"]*"' | cut -d'"' -f4 || echo "Could not fetch models"
+MODELS=$(curl -s http://localhost:11434/api/tags | grep -o '"name":"[^"]*"' | cut -d'"' -f4)
+if [ -n "$MODELS" ]; then
+    echo "$MODELS"
+    
+    # Check for advanced AI models
+    echo ""
+    echo "Advanced AI Model Status:"
+    echo "========================="
+    
+    if echo "$MODELS" | grep -q "qwen2.5"; then
+        echo "✅ Qwen 2.5 models available"
+    else
+        echo "❌ Qwen 2.5 models missing"
+    fi
+    
+    if echo "$MODELS" | grep -q "deepseek"; then
+        echo "✅ DeepSeek thinking models available"
+    else
+        echo "❌ DeepSeek thinking models missing"
+    fi
+    
+    if echo "$MODELS" | grep -q "llama2"; then
+        echo "✅ Standard models (llama2) available"
+    else
+        echo "❌ Standard models missing"
+    fi
+    
+    # Count total models
+    MODEL_COUNT=$(echo "$MODELS" | wc -l)
+    echo "📊 Total models installed: $MODEL_COUNT"
+    
+else
+    echo "Could not fetch models"
+fi
+
+echo ""
+echo "=========================================="
+echo "ADVANCED AI MODEL INSTALLATION"
+echo "=========================================="
+
+# Check if advanced models are missing and offer to install them
+MODELS=$(curl -s http://localhost:11434/api/tags | grep -o '"name":"[^"]*"' | cut -d'"' -f4)
+
+MISSING_MODELS=()
+
+if ! echo "$MODELS" | grep -q "qwen2.5:latest"; then
+    MISSING_MODELS+=("qwen2.5:latest")
+fi
+
+if ! echo "$MODELS" | grep -q "qwen2.5:32b"; then
+    MISSING_MODELS+=("qwen2.5:32b")
+fi
+
+if ! echo "$MODELS" | grep -q "deepseek-r1:latest"; then
+    MISSING_MODELS+=("deepseek-r1:latest")
+fi
+
+if [ ${#MISSING_MODELS[@]} -gt 0 ]; then
+    echo "🤖 Missing Advanced AI Models Detected!"
+    echo ""
+    echo "The following advanced models are not installed:"
+    for model in "${MISSING_MODELS[@]}"; do
+        echo "  ❌ $model"
+    done
+    echo ""
+    echo "These models enable:"
+    echo "  🧠 Advanced thinking and reasoning"
+    echo "  🤖 GitHub Copilot-style analysis"
+    echo "  📊 Enhanced data insights"
+    echo "  🎯 Better question answering"
+    echo ""
+    
+    read -p "Would you like to install the missing advanced models? (y/n): " -n 1 -r
+    echo
+    
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        echo ""
+        echo "Installing advanced AI models..."
+        echo "⚠️  This may take 20-45 minutes depending on your internet connection"
+        echo ""
+        
+        for model in "${MISSING_MODELS[@]}"; do
+            echo "📥 Installing $model..."
+            if ollama pull "$model"; then
+                echo "✅ Successfully installed $model"
+            else
+                echo "❌ Failed to install $model"
+            fi
+            echo ""
+        done
+        
+        echo "🎉 Advanced model installation completed!"
+        echo ""
+        echo "Updated model list:"
+        ollama list
+    else
+        echo "Skipping advanced model installation."
+        echo "You can install them later with:"
+        for model in "${MISSING_MODELS[@]}"; do
+            echo "  ollama pull $model"
+        done
+    fi
+else
+    echo "✅ All advanced AI models are already installed!"
+    echo ""
+    echo "Available advanced features:"
+    echo "  🧠 DeepSeek thinking models"
+    echo "  🤖 Qwen 2.5 for Copilot analysis"
+    echo "  📊 Enhanced data processing"
+fi
 
 echo ""
 echo "=========================================="
 echo "NEXT STEPS"
 echo "=========================================="
-echo "1. Test from your Windows laptop:"
+echo "1. Test basic connection from your Windows laptop:"
 echo "   curl http://$EC2_PUBLIC_IP:11434/api/tags"
 echo ""
 echo "2. Or open in browser:"
 echo "   http://$EC2_PUBLIC_IP:11434/api/tags"
 echo ""
-echo "3. Update your Excel plugin with:"
-echo "   Server URL: http://$EC2_PUBLIC_IP:11434"
+echo "3. Test advanced model (if installed):"
+echo "   curl -X POST http://$EC2_PUBLIC_IP:11434/api/generate \\"
+echo "        -H 'Content-Type: application/json' \\"
+echo "        -d '{\"model\":\"qwen2.5:latest\",\"prompt\":\"Hello\",\"stream\":false}'"
 echo ""
-echo "4. If still not working, check EC2 Security Group:"
-echo "   - Port: 11434"
-echo "   - Protocol: TCP"
-echo "   - Source: Your laptop's public IP"
+echo "4. Update your Excel plugin configuration:"
+echo "   📍 Server URL: http://$EC2_PUBLIC_IP:11434"
+echo "   🤖 Default Model: qwen2.5:latest"
+echo "   🧠 Thinking Model: deepseek-r1:latest"
+echo "   🚀 Copilot Model: qwen2.5:32b"
+echo ""
+echo "5. If using web interface, access at:"
+echo "   🌐 http://$EC2_PUBLIC_IP:3000"
+echo ""
+echo "6. If still not working, check EC2 Security Group:"
+echo "   🔒 Port 11434 (Ollama API)"
+echo "   🔒 Port 3000 (Web interface, if using)"
+echo "   🔒 Protocol: TCP"
+echo "   🔒 Source: Your laptop's public IP or 0.0.0.0/0"
+echo ""
+echo "7. Advanced Features Available:"
+echo "   🧠 Thinking models for complex reasoning"
+echo "   🤖 GitHub Copilot-style comprehensive analysis"
+echo "   📊 Native Excel chart generation"
+echo "   🎯 Enhanced question answering"
 echo "=========================================="
