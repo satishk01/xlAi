@@ -741,9 +741,9 @@ Private Function BuildComprehensiveThinkingPrompt(dataArray As Variant, question
     actualData = "ACTUAL DATA FROM EXCEL SELECTION (" & rangeAddress & "):" & vbCrLf
     actualData = actualData & "Headers: " & headers & vbCrLf & vbCrLf
     
-    ' Include more actual data rows (up to 10)
+    ' Include more actual data rows (up to 30)
     Dim maxRows As Long
-    maxRows = Application.Min(10, rowCount - 1)
+    maxRows = Application.Min(30, rowCount - 1)
     
     For i = LBound(dataArray, 1) + 1 To LBound(dataArray, 1) + maxRows
         actualData = actualData & "Row " & (i - LBound(dataArray, 1)) & ": "
@@ -754,8 +754,8 @@ Private Function BuildComprehensiveThinkingPrompt(dataArray As Variant, question
         actualData = actualData & vbCrLf
     Next i
     
-    If rowCount > 11 Then
-        actualData = actualData & "... and " & (rowCount - 11) & " more rows" & vbCrLf
+    If rowCount > 31 Then
+        actualData = actualData & "... and " & (rowCount - 31) & " more rows" & vbCrLf
     End If
     
     ' Add basic statistics
@@ -775,14 +775,9 @@ Private Function BuildComprehensiveThinkingPrompt(dataArray As Variant, question
     
     prompt = prompt & "USER QUESTION: " & question & vbCrLf & vbCrLf
     
-    prompt = prompt & "INSTRUCTIONS:" & vbCrLf
-    prompt = prompt & "1. Analyze the ACTUAL data provided above (not hypothetical data)" & vbCrLf
-    prompt = prompt & "2. Use <thinking> tags for your reasoning process" & vbCrLf
-    prompt = prompt & "3. Reference specific values, patterns, and insights from the real data" & vbCrLf
-    prompt = prompt & "4. Provide actionable insights based on what you see in the data" & vbCrLf
-    prompt = prompt & "5. Give your final answer after the thinking process" & vbCrLf & vbCrLf
-    
-    prompt = prompt & "Please think through this carefully using the actual data provided."
+    prompt = prompt & "ANSWER DIRECTLY: " & vbCrLf
+    prompt = prompt & "Analyze the actual data above and give a direct answer to the question. " & _
+             "Use <thinking> tags for reasoning but keep the final answer concise and specific."
     
     BuildComprehensiveThinkingPrompt = prompt
     
@@ -1386,8 +1381,11 @@ Private Function BuildSimpleQuestionPromptFixed(dataArray As Variant, question A
         headers = headers & CStr(dataArray(LBound(dataArray, 1), j))
     Next j
     
-    ' Extract sample data
-    For i = LBound(dataArray, 1) + 1 To Application.Min(LBound(dataArray, 1) + 3, UBound(dataArray, 1))
+    ' Extract ALL data (not just sample)
+    Dim maxRows As Long
+    maxRows = Application.Min(50, rowCount - 1) ' Include up to 50 rows of actual data
+    
+    For i = LBound(dataArray, 1) + 1 To LBound(dataArray, 1) + maxRows
         sampleData = sampleData & "Row " & (i - LBound(dataArray, 1)) & ": "
         For j = LBound(dataArray, 2) To UBound(dataArray, 2)
             If j > LBound(dataArray, 2) Then sampleData = sampleData & " | "
@@ -1396,18 +1394,15 @@ Private Function BuildSimpleQuestionPromptFixed(dataArray As Variant, question A
         sampleData = sampleData & vbCrLf
     Next i
     
-    prompt = "🔍 ANALYZING YOUR ACTUAL EXCEL DATA FROM RANGE " & rangeAddress & ":" & vbCrLf & vbCrLf
-    prompt = prompt & "📊 DATASET DETAILS:" & vbCrLf
-    prompt = prompt & "• Total rows: " & (rowCount - 1) & " (excluding header)" & vbCrLf
-    prompt = prompt & "• Columns: " & headers & vbCrLf & vbCrLf
-    prompt = prompt & "📋 ACTUAL DATA FROM YOUR SELECTION:" & vbCrLf & sampleData & vbCrLf
-    prompt = prompt & "❓ YOUR QUESTION: " & question & vbCrLf & vbCrLf
-    prompt = prompt & "🎯 INSTRUCTIONS:" & vbCrLf
-    prompt = prompt & "• Analyze ONLY the actual data values shown above" & vbCrLf
-    prompt = prompt & "• Do NOT create sample or hypothetical data" & vbCrLf
-    prompt = prompt & "• Reference specific values and patterns from the real data" & vbCrLf
-    prompt = prompt & "• Give concrete insights based on what you actually see" & vbCrLf & vbCrLf
-    prompt = prompt & "Please provide your analysis based exclusively on the real data provided above."
+    If rowCount > 51 Then
+        sampleData = sampleData & "... and " & (rowCount - 51) & " more rows with similar structure" & vbCrLf
+    End If
+    
+    prompt = "QUESTION: " & question & vbCrLf & vbCrLf
+    prompt = prompt & "DATA FROM EXCEL RANGE " & rangeAddress & " (" & (rowCount - 1) & " rows):" & vbCrLf
+    prompt = prompt & "Columns: " & headers & vbCrLf & vbCrLf
+    prompt = prompt & sampleData & vbCrLf
+    prompt = prompt & "ANSWER DIRECTLY based on this actual data. No explanations or examples needed - just the answer."
     
     BuildSimpleQuestionPromptFixed = prompt
     
@@ -1855,8 +1850,8 @@ Public Sub DoCopilotAnalysis()
            "Preview:" & vbCrLf & Left(copilotResult, 200) & "..." & vbCrLf & vbCrLf & _
            "Full analysis has been written to a new sheet.", vbInformation, "Copilot Complete"
     
-    ' Write comprehensive results
-    Call WriteCopilotResultsToSheet(copilotResult, rowCount, colCount)
+    ' Write comprehensive results with enhanced features
+    Call WriteCopilotResultsToSheetEnhanced(copilotResult, selectedRange, rowCount, colCount)
     
     Exit Sub
     
@@ -1912,8 +1907,11 @@ Private Function BuildCopilotPrompt(dataArray As Variant) As String
         headers = headers & CStr(dataArray(LBound(dataArray, 1), j))
     Next j
     
-    ' Extract sample data (first 5 rows)
-    For i = LBound(dataArray, 1) + 1 To Application.Min(LBound(dataArray, 1) + 5, UBound(dataArray, 1))
+    ' Extract more data for comprehensive analysis (up to 20 rows)
+    Dim maxRows As Long
+    maxRows = Application.Min(20, rowCount - 1)
+    
+    For i = LBound(dataArray, 1) + 1 To LBound(dataArray, 1) + maxRows
         sampleData = sampleData & "Row " & (i - LBound(dataArray, 1)) & ": "
         For j = LBound(dataArray, 2) To UBound(dataArray, 2)
             If j > LBound(dataArray, 2) Then sampleData = sampleData & ", "
@@ -1921,6 +1919,10 @@ Private Function BuildCopilotPrompt(dataArray As Variant) As String
         Next j
         sampleData = sampleData & vbCrLf
     Next i
+    
+    If rowCount > 21 Then
+        sampleData = sampleData & "... and " & (rowCount - 21) & " more rows" & vbCrLf
+    End If
     
     ' Build comprehensive Copilot prompt
     prompt = "🤖 You are GitHub Copilot for Excel - analyze the ACTUAL user data below." & vbCrLf & vbCrLf
@@ -2024,4 +2026,233 @@ ErrorHandler:
     ActiveSheet.Range("A1").Value = "Copilot Analysis Results:"
     ActiveSheet.Range("A2").Value = copilotResult
     MsgBox "Copilot results written to current sheet", vbInformation
+End Sub
+
+' Write Enhanced Copilot Results with Trends, Anomalies, and Charts
+Private Sub WriteCopilotResultsToSheetEnhanced(copilotResult As String, selectedRange As Range, rowCount As Long, colCount As Long)
+    On Error GoTo ErrorHandler
+    
+    Dim ws As Worksheet
+    Dim sheetName As String
+    Dim trendsAnalysis As String
+    Dim anomaliesAnalysis As String
+    
+    ' Create unique sheet name
+    sheetName = "Copilot_Enhanced_" & Format(Now(), "hhmmss")
+    
+    ' Create new sheet
+    On Error Resume Next
+    Set ws = ActiveWorkbook.Worksheets.Add
+    If Err.Number <> 0 Then
+        On Error GoTo ErrorHandler
+        Set ws = ActiveSheet
+        MsgBox "Using current sheet for enhanced Copilot results", vbInformation
+    End If
+    On Error GoTo ErrorHandler
+    
+    ' Set sheet name
+    On Error Resume Next
+    ws.Name = sheetName
+    On Error GoTo ErrorHandler
+    
+    ' Write main analysis
+    ws.Range("A1").Value = copilotResult
+    
+    ' Generate additional trend analysis
+    trendsAnalysis = GenerateTrendAnalysis(selectedRange)
+    ws.Range("A" & (ws.UsedRange.Rows.Count + 3)).Value = "📈 DETAILED TREND ANALYSIS:"
+    ws.Range("A" & (ws.UsedRange.Rows.Count + 1)).Value = trendsAnalysis
+    
+    ' Generate anomaly detection
+    anomaliesAnalysis = GenerateAnomalyAnalysis(selectedRange)
+    ws.Range("A" & (ws.UsedRange.Rows.Count + 3)).Value = "⚠️ ANOMALY DETECTION:"
+    ws.Range("A" & (ws.UsedRange.Rows.Count + 1)).Value = anomaliesAnalysis
+    
+    ' Create visualization charts
+    Call CreateCopilotCharts(ws, selectedRange)
+    
+    ' Format the sheet
+    With ws.Columns(1)
+        .Font.Name = "Segoe UI"
+        .Font.Size = 11
+        .WrapText = True
+        .ColumnWidth = 120
+    End With
+    
+    ' Add enhanced header formatting
+    With ws.Range("A1:A10")
+        .Font.Bold = True
+        .Font.Color = RGB(0, 120, 215)
+        .Interior.Color = RGB(248, 249, 250)
+    End With
+    
+    ' Activate sheet
+    ws.Activate
+    ws.Range("A1").Select
+    
+    MsgBox "✅ Enhanced Copilot Analysis Complete!" & vbCrLf & vbCrLf & _
+           "📊 Main Analysis: Generated" & vbCrLf & _
+           "📈 Trend Analysis: Added" & vbCrLf & _
+           "⚠️ Anomaly Detection: Added" & vbCrLf & _
+           "📊 Visualization Charts: Created" & vbCrLf & vbCrLf & _
+           "Check the new sheet: " & sheetName, vbInformation, "Enhanced Analysis Complete"
+    
+    Exit Sub
+    
+ErrorHandler:
+    ' Fallback to current sheet
+    On Error Resume Next
+    ActiveSheet.Range("A1").Value = "Enhanced Copilot Analysis Results:"
+    ActiveSheet.Range("A2").Value = copilotResult
+    MsgBox "Enhanced Copilot results written to current sheet", vbInformation
+End Sub
+
+' Generate Trend Analysis
+Private Function GenerateTrendAnalysis(selectedRange As Range) As String
+    On Error GoTo ErrorHandler
+    
+    Dim dataArray As Variant
+    Dim trendPrompt As String
+    Dim trendResult As String
+    
+    dataArray = selectedRange.Value2
+    
+    trendPrompt = "Analyze the following data for trends and patterns:" & vbCrLf & vbCrLf
+    trendPrompt = trendPrompt & "Focus on:" & vbCrLf
+    trendPrompt = trendPrompt & "• Time-based trends (if dates present)" & vbCrLf
+    trendPrompt = trendPrompt & "• Growth/decline patterns" & vbCrLf
+    trendPrompt = trendPrompt & "• Seasonal patterns" & vbCrLf
+    trendPrompt = trendPrompt & "• Correlation between columns" & vbCrLf & vbCrLf
+    
+    ' Add data summary
+    trendPrompt = trendPrompt & GetDataSummaryForAnalysis(dataArray)
+    trendPrompt = trendPrompt & vbCrLf & "Provide specific trend insights based on this actual data."
+    
+    trendResult = CallOllamaAPIReal(trendPrompt)
+    
+    GenerateTrendAnalysis = trendResult
+    
+    Exit Function
+    
+ErrorHandler:
+    GenerateTrendAnalysis = "Error generating trend analysis: " & Err.Description
+End Function
+
+' Generate Anomaly Analysis
+Private Function GenerateAnomalyAnalysis(selectedRange As Range) As String
+    On Error GoTo ErrorHandler
+    
+    Dim dataArray As Variant
+    Dim anomalyPrompt As String
+    Dim anomalyResult As String
+    
+    dataArray = selectedRange.Value2
+    
+    anomalyPrompt = "Detect anomalies and outliers in this data:" & vbCrLf & vbCrLf
+    anomalyPrompt = anomalyPrompt & "Look for:" & vbCrLf
+    anomalyPrompt = anomalyPrompt & "• Values significantly higher/lower than average" & vbCrLf
+    anomalyPrompt = anomalyPrompt & "• Unusual patterns or spikes" & vbCrLf
+    anomalyPrompt = anomalyPrompt & "• Data quality issues" & vbCrLf
+    anomalyPrompt = anomalyPrompt & "• Inconsistent entries" & vbCrLf & vbCrLf
+    
+    ' Add data summary
+    anomalyPrompt = anomalyPrompt & GetDataSummaryForAnalysis(dataArray)
+    anomalyPrompt = anomalyPrompt & vbCrLf & "Identify specific anomalies with row numbers and values."
+    
+    anomalyResult = CallOllamaAPIReal(anomalyPrompt)
+    
+    GenerateAnomalyAnalysis = anomalyResult
+    
+    Exit Function
+    
+ErrorHandler:
+    GenerateAnomalyAnalysis = "Error generating anomaly analysis: " & Err.Description
+End Function
+
+' Get Data Summary for Analysis
+Private Function GetDataSummaryForAnalysis(dataArray As Variant) As String
+    On Error GoTo ErrorHandler
+    
+    Dim summary As String
+    Dim headers As String
+    Dim sampleData As String
+    Dim i As Long, j As Long
+    Dim rowCount As Long, colCount As Long
+    
+    rowCount = UBound(dataArray, 1) - LBound(dataArray, 1) + 1
+    colCount = UBound(dataArray, 2) - LBound(dataArray, 2) + 1
+    
+    ' Extract headers
+    For j = LBound(dataArray, 2) To UBound(dataArray, 2)
+        If j > LBound(dataArray, 2) Then headers = headers & ", "
+        headers = headers & CStr(dataArray(LBound(dataArray, 1), j))
+    Next j
+    
+    ' Extract sample data (first 10 rows)
+    For i = LBound(dataArray, 1) + 1 To Application.Min(LBound(dataArray, 1) + 10, UBound(dataArray, 1))
+        sampleData = sampleData & "Row " & (i - LBound(dataArray, 1)) & ": "
+        For j = LBound(dataArray, 2) To UBound(dataArray, 2)
+            If j > LBound(dataArray, 2) Then sampleData = sampleData & " | "
+            sampleData = sampleData & CStr(dataArray(i, j))
+        Next j
+        sampleData = sampleData & vbCrLf
+    Next i
+    
+    summary = "Data: " & (rowCount - 1) & " rows, Columns: " & headers & vbCrLf
+    summary = summary & "Sample data:" & vbCrLf & sampleData
+    
+    GetDataSummaryForAnalysis = summary
+    
+    Exit Function
+    
+ErrorHandler:
+    GetDataSummaryForAnalysis = "Error creating data summary"
+End Function
+
+' Create Copilot Charts
+Private Sub CreateCopilotCharts(ws As Worksheet, selectedRange As Range)
+    On Error GoTo ErrorHandler
+    
+    Dim chartRange As Range
+    Dim chart As ChartObject
+    Dim chartTop As Long
+    
+    ' Position charts to the right of the text
+    chartTop = 50
+    
+    ' Create a summary chart if data is suitable
+    If selectedRange.Columns.Count >= 2 And selectedRange.Rows.Count > 2 Then
+        
+        ' Copy data to the analysis sheet for charting
+        Set chartRange = ws.Range("D1").Resize(Application.Min(20, selectedRange.Rows.Count), selectedRange.Columns.Count)
+        chartRange.Value = selectedRange.Resize(Application.Min(20, selectedRange.Rows.Count), selectedRange.Columns.Count).Value
+        
+        ' Create a line chart for trends
+        Set chart = ws.ChartObjects.Add(Left:=ws.Columns("F").Left, Top:=chartTop, Width:=400, Height:=250)
+        With chart.Chart
+            .SetSourceData chartRange
+            .ChartType = xlLine
+            .HasTitle = True
+            .ChartTitle.Text = "📈 Data Trends"
+            .HasLegend = True
+        End With
+        
+        ' Create a column chart for comparison
+        chartTop = chartTop + 300
+        Set chart = ws.ChartObjects.Add(Left:=ws.Columns("F").Left, Top:=chartTop, Width:=400, Height:=250)
+        With chart.Chart
+            .SetSourceData chartRange
+            .ChartType = xlColumnClustered
+            .HasTitle = True
+            .ChartTitle.Text = "📊 Data Comparison"
+            .HasLegend = True
+        End With
+        
+    End If
+    
+    Exit Sub
+    
+ErrorHandler:
+    ' Charts are optional, continue without error
+    On Error Resume Next
 End Sub
