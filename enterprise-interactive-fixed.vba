@@ -430,6 +430,92 @@ Private Sub GenerateCustomerData(ws As Worksheet, startCell As String, rowCount 
     FormatAsTable tableRange, "Customer Data"
 End Sub
 
+' Generate Inventory Data
+Private Sub GenerateInventoryData(ws As Worksheet, startCell As String, rowCount As Long)
+    Dim startRange As Range
+    Dim i As Long
+    Dim baseDate As Date
+    
+    Set startRange = ws.Range(startCell)
+    baseDate = DateSerial(2024, 1, 1)
+    
+    ' Headers
+    startRange.Offset(0, 0).Value = "Product_ID"
+    startRange.Offset(0, 1).Value = "Product_Name"
+    startRange.Offset(0, 2).Value = "Stock_Level"
+    startRange.Offset(0, 3).Value = "Reorder_Point"
+    startRange.Offset(0, 4).Value = "Unit_Cost"
+    startRange.Offset(0, 5).Value = "Last_Updated"
+    
+    ' Data
+    Dim products As Variant
+    products = Array("Widget A", "Widget B", "Gadget X", "Tool Pro", "Device Z", "Component Y")
+    
+    For i = 1 To rowCount
+        startRange.Offset(i, 0).Value = "INV" & Format(i, "0000")
+        startRange.Offset(i, 1).Value = products((i - 1) Mod UBound(products) + 1)
+        startRange.Offset(i, 2).Value = Int(10 + Rnd() * 500) ' Stock level
+        startRange.Offset(i, 3).Value = Int(20 + Rnd() * 100) ' Reorder point
+        startRange.Offset(i, 4).Value = Round(5 + Rnd() * 95, 2) ' Unit cost
+        startRange.Offset(i, 5).Value = baseDate + Int(Rnd() * 30) ' Last updated
+    Next i
+    
+    ' Format as table
+    Dim tableRange As Range
+    Set tableRange = startRange.Resize(rowCount + 1, 6)
+    FormatAsTable tableRange, "Inventory Data"
+End Sub
+
+' Generate Marketing Data
+Private Sub GenerateMarketingData(ws As Worksheet, startCell As String, rowCount As Long)
+    Dim startRange As Range
+    Dim i As Long
+    Dim baseDate As Date
+    
+    Set startRange = ws.Range(startCell)
+    baseDate = DateSerial(2024, 1, 1)
+    
+    ' Headers
+    startRange.Offset(0, 0).Value = "Campaign_ID"
+    startRange.Offset(0, 1).Value = "Campaign_Name"
+    startRange.Offset(0, 2).Value = "Channel"
+    startRange.Offset(0, 3).Value = "Impressions"
+    startRange.Offset(0, 4).Value = "Clicks"
+    startRange.Offset(0, 5).Value = "Conversions"
+    startRange.Offset(0, 6).Value = "Cost"
+    startRange.Offset(0, 7).Value = "ROI"
+    
+    ' Data
+    Dim campaigns As Variant
+    Dim channels As Variant
+    
+    campaigns = Array("Summer Sale", "Back to School", "Holiday Special", "New Product Launch", "Brand Awareness", "Retargeting")
+    channels = Array("Google Ads", "Facebook", "Instagram", "Email", "Display", "YouTube")
+    
+    For i = 1 To rowCount
+        Dim impressions As Long, clicks As Long, conversions As Long, cost As Double
+        
+        impressions = Int(1000 + Rnd() * 50000)
+        clicks = Int(impressions * (0.01 + Rnd() * 0.05)) ' 1-6% CTR
+        conversions = Int(clicks * (0.02 + Rnd() * 0.08)) ' 2-10% conversion rate
+        cost = Round(100 + Rnd() * 2000, 2)
+        
+        startRange.Offset(i, 0).Value = "CAMP" & Format(i, "000")
+        startRange.Offset(i, 1).Value = campaigns((i - 1) Mod UBound(campaigns) + 1)
+        startRange.Offset(i, 2).Value = channels((i - 1) Mod UBound(channels) + 1)
+        startRange.Offset(i, 3).Value = impressions
+        startRange.Offset(i, 4).Value = clicks
+        startRange.Offset(i, 5).Value = conversions
+        startRange.Offset(i, 6).Value = cost
+        startRange.Offset(i, 7).Value = Round(((conversions * 50) - cost) / cost * 100, 1) ' ROI %
+    Next i
+    
+    ' Format as table
+    Dim tableRange As Range
+    Set tableRange = startRange.Resize(rowCount + 1, 8)
+    FormatAsTable tableRange, "Marketing Data"
+End Sub
+
 ' Generate Large Dataset for Performance Testing
 Private Sub GenerateLargeDataset(ws As Worksheet, startCell As String, rowCount As Long)
     Dim startRange As Range
@@ -1365,7 +1451,7 @@ ErrorHandler:
     ExtractFinalAnswer = rawResponse
 End Function
 
-' Configuration Functions
+' Configuration Functions - ENHANCED WITH MODEL EXPLANATIONS
 Public Sub ConfigureAdvancedModels()
     On Error GoTo ErrorHandler
     
@@ -1374,28 +1460,82 @@ Public Sub ConfigureAdvancedModels()
     Dim newThinkingModel As String
     Dim newCopilotModel As String
     
-    newServer = InputBox("Enter your Ollama Server URL:" & vbCrLf & vbCrLf & _
+    ' Show current configuration first
+    MsgBox "🔧 CURRENT CONFIGURATION:" & vbCrLf & vbCrLf & _
+           "Server: " & serverUrl & vbCrLf & _
+           "Default Model: " & currentModel & vbCrLf & _
+           "Thinking Model: " & thinkingModel & vbCrLf & _
+           "Copilot Model: " & copilotModel & vbCrLf & vbCrLf & _
+           "Click OK to update configuration...", vbInformation, "Current Settings"
+    
+    ' Get server URL
+    newServer = InputBox("🌐 OLLAMA SERVER CONFIGURATION" & vbCrLf & vbCrLf & _
+                        "Enter your Ollama Server URL:" & vbCrLf & vbCrLf & _
                         "Examples:" & vbCrLf & _
-                        "- http://localhost:11434 (local)" & vbCrLf & _
-                        "- http://your-ec2-ip:11434 (AWS EC2)", _
-                        "Advanced Server Configuration", serverUrl)
+                        "• http://localhost:11434 (local installation)" & vbCrLf & _
+                        "• http://your-ec2-ip:11434 (AWS EC2 server)" & vbCrLf & _
+                        "• http://192.168.1.100:11434 (local network)" & vbCrLf & vbCrLf & _
+                        "Current: " & serverUrl, _
+                        "Server Configuration", serverUrl)
     
     If newServer <> "" And newServer <> "False" Then
         serverUrl = newServer
         
-        newDefaultModel = InputBox("Default Model:", "Default Model", currentModel)
-        newThinkingModel = InputBox("Thinking Model:", "Thinking Model", thinkingModel)
-        newCopilotModel = InputBox("Copilot Model:", "Copilot Model", copilotModel)
+        ' Configure Default Model
+        newDefaultModel = InputBox("🤖 DEFAULT MODEL CONFIGURATION" & vbCrLf & vbCrLf & _
+                                  "This model is used for:" & vbCrLf & _
+                                  "• Standard questions and analysis" & vbCrLf & _
+                                  "• Chart recommendations" & vbCrLf & _
+                                  "• General data processing" & vbCrLf & vbCrLf & _
+                                  "Recommended models:" & vbCrLf & _
+                                  "• qwen2.5:latest (best overall performance)" & vbCrLf & _
+                                  "• llama2:latest (reliable, widely supported)" & vbCrLf & _
+                                  "• mistral:latest (fast responses)" & vbCrLf & vbCrLf & _
+                                  "Current: " & currentModel, _
+                                  "Default Model", currentModel)
         
+        ' Configure Thinking Model
+        newThinkingModel = InputBox("🧠 THINKING MODEL CONFIGURATION" & vbCrLf & vbCrLf & _
+                                   "This model is used for:" & vbCrLf & _
+                                   "• Complex reasoning and analysis" & vbCrLf & _
+                                   "• Advanced questions with 'insight', 'pattern', 'predict'" & vbCrLf & _
+                                   "• Deep data analysis with step-by-step thinking" & vbCrLf & vbCrLf & _
+                                   "Recommended models:" & vbCrLf & _
+                                   "• deepseek-r1:latest (best reasoning, requires 8GB+ RAM)" & vbCrLf & _
+                                   "• qwen2.5:latest (good alternative if DeepSeek unavailable)" & vbCrLf & _
+                                   "• llama2:latest (fallback option)" & vbCrLf & vbCrLf & _
+                                   "Current: " & thinkingModel, _
+                                   "Thinking Model", thinkingModel)
+        
+        ' Configure Copilot Model
+        newCopilotModel = InputBox("🚀 COPILOT MODEL CONFIGURATION" & vbCrLf & vbCrLf & _
+                                  "This model is used for:" & vbCrLf & _
+                                  "• GitHub Copilot-style comprehensive analysis" & vbCrLf & _
+                                  "• Business insights and recommendations" & vbCrLf & _
+                                  "• Multi-faceted data analysis reports" & vbCrLf & vbCrLf & _
+                                  "Recommended models:" & vbCrLf & _
+                                  "• qwen2.5:32b (best for comprehensive analysis, requires 16GB+ RAM)" & vbCrLf & _
+                                  "• qwen2.5:latest (good performance, lower memory)" & vbCrLf & _
+                                  "• llama2:latest (basic copilot features)" & vbCrLf & vbCrLf & _
+                                  "Current: " & copilotModel, _
+                                  "Copilot Model", copilotModel)
+        
+        ' Update configuration
         If newDefaultModel <> "" And newDefaultModel <> "False" Then currentModel = newDefaultModel
         If newThinkingModel <> "" And newThinkingModel <> "False" Then thinkingModel = newThinkingModel
         If newCopilotModel <> "" And newCopilotModel <> "False" Then copilotModel = newCopilotModel
         
-        MsgBox "Configuration Updated!" & vbCrLf & vbCrLf & _
-               "Server: " & serverUrl & vbCrLf & _
-               "Default: " & currentModel & vbCrLf & _
-               "Thinking: " & thinkingModel & vbCrLf & _
-               "Copilot: " & copilotModel, vbInformation, "Configuration"
+        ' Show updated configuration
+        MsgBox "✅ CONFIGURATION UPDATED SUCCESSFULLY!" & vbCrLf & vbCrLf & _
+               "🌐 Server: " & serverUrl & vbCrLf & vbCrLf & _
+               "🤖 Default Model: " & currentModel & vbCrLf & _
+               "   Used for: Standard questions, charts" & vbCrLf & vbCrLf & _
+               "🧠 Thinking Model: " & thinkingModel & vbCrLf & _
+               "   Used for: Complex reasoning, insights" & vbCrLf & vbCrLf & _
+               "🚀 Copilot Model: " & copilotModel & vbCrLf & _
+               "   Used for: Comprehensive analysis" & vbCrLf & vbCrLf & _
+               "💡 Use TestAdvancedConnection to verify all models work!", _
+               vbInformation, "Configuration Complete"
     End If
     
     Exit Sub
@@ -1403,6 +1543,111 @@ Public Sub ConfigureAdvancedModels()
 ErrorHandler:
     MsgBox "Configuration error: " & Err.Description, vbCritical, "Configuration Error"
 End Sub
+
+' Test Advanced Connection - ENHANCED
+Public Sub TestAdvancedConnection()
+    On Error GoTo ErrorHandler
+    
+    Dim testResults As String
+    Dim modelTests As Variant
+    Dim i As Long
+    Dim allWorking As Boolean
+    
+    modelTests = Array(currentModel, thinkingModel, copilotModel)
+    allWorking = True
+    
+    testResults = "🧪 ADVANCED MODEL TESTING RESULTS" & vbCrLf & String(50, "=") & vbCrLf & vbCrLf
+    testResults = testResults & "🌐 Server: " & serverUrl & vbCrLf & vbCrLf
+    
+    ' Test each model
+    For i = 0 To UBound(modelTests)
+        Application.StatusBar = "Testing model: " & modelTests(i) & "..."
+        
+        Dim modelName As String
+        Dim modelPurpose As String
+        
+        modelName = CStr(modelTests(i))
+        
+        Select Case i
+            Case 0
+                modelPurpose = "Default (Standard questions, charts)"
+            Case 1
+                modelPurpose = "Thinking (Complex reasoning)"
+            Case 2
+                modelPurpose = "Copilot (Comprehensive analysis)"
+        End Select
+        
+        If TestModelConnection(modelName) Then
+            testResults = testResults & "✅ " & modelName & vbCrLf
+            testResults = testResults & "   Purpose: " & modelPurpose & vbCrLf
+            testResults = testResults & "   Status: Working correctly" & vbCrLf & vbCrLf
+        Else
+            testResults = testResults & "❌ " & modelName & vbCrLf
+            testResults = testResults & "   Purpose: " & modelPurpose & vbCrLf
+            testResults = testResults & "   Status: Failed or not installed" & vbCrLf & vbCrLf
+            allWorking = False
+        End If
+    Next i
+    
+    Application.StatusBar = False
+    
+    ' Add feature availability
+    testResults = testResults & "🎯 FEATURE AVAILABILITY:" & vbCrLf & String(30, "-") & vbCrLf
+    testResults = testResults & "• Standard Questions: " & IIf(TestModelConnection(currentModel), "✅ Available", "❌ Unavailable") & vbCrLf
+    testResults = testResults & "• Advanced Thinking: " & IIf(TestModelConnection(thinkingModel), "✅ Available", "❌ Unavailable") & vbCrLf
+    testResults = testResults & "• Copilot Analysis: " & IIf(TestModelConnection(copilotModel), "✅ Available", "❌ Unavailable") & vbCrLf
+    testResults = testResults & "• Chart Generation: ✅ Available (Native Excel)" & vbCrLf
+    testResults = testResults & "• Sample Data: ✅ Available" & vbCrLf & vbCrLf
+    
+    If allWorking Then
+        testResults = testResults & "🎉 ALL MODELS WORKING PERFECTLY!" & vbCrLf
+        testResults = testResults & "Your enterprise plugin is ready for advanced AI analysis."
+    Else
+        testResults = testResults & "⚠️ SOME MODELS NOT WORKING" & vbCrLf
+        testResults = testResults & "Install missing models with: ollama pull [model-name]" & vbCrLf
+        testResults = testResults & "Or run the enhanced fix-ollama-external-access.sh script."
+    End If
+    
+    MsgBox testResults, IIf(allWorking, vbInformation, vbExclamation), "Advanced Connection Test"
+    
+    Exit Sub
+    
+ErrorHandler:
+    Application.StatusBar = False
+    MsgBox "Error in TestAdvancedConnection: " & Err.Description, vbCritical, "Connection Test Error"
+End Sub
+
+' Test Individual Model Connection - ENHANCED
+Private Function TestModelConnection(modelName As String) As Boolean
+    On Error GoTo ErrorHandler
+    
+    Dim http As Object
+    Dim url As String
+    Dim requestBody As String
+    Dim response As String
+    
+    Set http = CreateObject("MSXML2.XMLHTTP")
+    url = serverUrl & "/api/generate"
+    
+    requestBody = "{""model"":""" & modelName & """,""prompt"":""Hello"",""stream"":false}"
+    
+    http.Open "POST", url, False
+    http.setRequestHeader "Content-Type", "application/json"
+    http.send requestBody
+    
+    If http.Status = 200 Then
+        response = http.responseText
+        ' Check if response contains actual content
+        TestModelConnection = (InStr(response, """response"":""") > 0)
+    Else
+        TestModelConnection = False
+    End If
+    
+    Exit Function
+    
+ErrorHandler:
+    TestModelConnection = False
+End Function
 
 ' Show Interactive Help
 Public Sub ShowInteractiveHelp()
