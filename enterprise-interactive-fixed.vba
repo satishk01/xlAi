@@ -1662,6 +1662,7 @@ Public Sub ShowInteractiveHelp()
     helpText = helpText & "🎯 MAIN FUNCTIONS:" & vbCrLf
     helpText = helpText & "• GenerateSampleData - Create test data" & vbCrLf
     helpText = helpText & "• AskAdvancedQuestionFixed - AI analysis of YOUR data" & vbCrLf
+    helpText = helpText & "• DoCopilotAnalysis - Comprehensive Copilot-style insights" & vbCrLf
     helpText = helpText & "• GenerateInteractiveChart - Choose your chart type" & vbCrLf
     helpText = helpText & "• ConfigureAdvancedModels - Setup AI models" & vbCrLf & vbCrLf
     helpText = helpText & "📊 SAMPLE DATA TYPES:" & vbCrLf
@@ -1679,4 +1680,224 @@ Public Sub ShowInteractiveHelp()
     helpText = helpText & "4. Run GenerateInteractiveChart for visualization"
     
     MsgBox helpText, vbInformation, "Interactive Plugin Help"
+End Sub
+
+' GitHub Copilot-like Analysis - COMPREHENSIVE AI INSIGHTS
+Public Sub DoCopilotAnalysis()
+    On Error GoTo ErrorHandler
+    
+    Dim selectedRange As Range
+    Dim rowCount As Long, colCount As Long
+    Dim copilotResult As String
+    
+    ' Validate selection
+    Set selectedRange = GetValidatedSelection()
+    If selectedRange Is Nothing Then Exit Sub
+    
+    rowCount = selectedRange.Rows.Count
+    colCount = selectedRange.Columns.Count
+    
+    ' Confirm Copilot analysis
+    If MsgBox("🤖 GitHub Copilot-style Analysis" & vbCrLf & vbCrLf & _
+              "Dataset: " & Format(rowCount, "#,##0") & " rows × " & colCount & " columns" & vbCrLf & vbCrLf & _
+              "This will provide comprehensive insights like GitHub Copilot:" & vbCrLf & _
+              "• Data patterns and anomalies" & vbCrLf & _
+              "• Business insights and recommendations" & vbCrLf & _
+              "• Predictive analysis" & vbCrLf & _
+              "• Optimization suggestions" & vbCrLf & _
+              "• Interactive visualizations" & vbCrLf & vbCrLf & _
+              "Continue with Copilot analysis?", _
+              vbYesNo + vbQuestion, "Copilot Analysis") = vbNo Then Exit Sub
+    
+    ' Execute Copilot analysis with thinking model
+    Call PrepareExcelForProcessing("🧠 Copilot analyzing " & Format(rowCount, "#,##0") & " rows with AI thinking...")
+    
+    copilotResult = PerformCopilotAnalysis(selectedRange)
+    
+    Call RestoreExcelState()
+    
+    ' Show preview in message box
+    MsgBox "🤖 Copilot Analysis Completed!" & vbCrLf & vbCrLf & _
+           "Generated comprehensive insights for your data." & vbCrLf & vbCrLf & _
+           "Preview:" & vbCrLf & Left(copilotResult, 200) & "..." & vbCrLf & vbCrLf & _
+           "Full analysis has been written to a new sheet.", vbInformation, "Copilot Complete"
+    
+    ' Write comprehensive results
+    Call WriteCopilotResultsToSheet(copilotResult, rowCount, colCount)
+    
+    Exit Sub
+    
+ErrorHandler:
+    Call RestoreExcelState()
+    MsgBox "Error in DoCopilotAnalysis: " & Err.Description, vbCritical, "Copilot Error"
+End Sub
+
+' Perform GitHub Copilot-like Analysis
+Private Function PerformCopilotAnalysis(selectedRange As Range) As String
+    On Error GoTo ErrorHandler
+    
+    Dim dataArray As Variant
+    Dim copilotPrompt As String
+    Dim rawResponse As String
+    Dim cleanResponse As String
+    
+    dataArray = selectedRange.Value2
+    
+    ' Build comprehensive Copilot-style prompt
+    copilotPrompt = BuildCopilotPrompt(dataArray)
+    
+    ' Use thinking model for deep analysis (fallback to standard if not available)
+    On Error Resume Next
+    rawResponse = CallOllamaWithThinking(copilotPrompt, "qwen2.5:14b")
+    If Err.Number <> 0 Then
+        On Error GoTo ErrorHandler
+        rawResponse = CallOllamaAPIReal(copilotPrompt)
+        cleanResponse = rawResponse
+    Else
+        ' Clean response (remove thinking process)
+        cleanResponse = ExtractFinalAnswer(rawResponse)
+    End If
+    On Error GoTo ErrorHandler
+    
+    ' Format as Copilot-style response
+    PerformCopilotAnalysis = FormatCopilotResponse(cleanResponse, selectedRange.Rows.Count, selectedRange.Columns.Count)
+    
+    Exit Function
+    
+ErrorHandler:
+    PerformCopilotAnalysis = "Error in Copilot analysis: " & Err.Description
+End Function
+
+' Build Copilot-style Prompt
+Private Function BuildCopilotPrompt(dataArray As Variant) As String
+    On Error GoTo ErrorHandler
+    
+    Dim prompt As String
+    Dim headers As String
+    Dim sampleData As String
+    Dim dataStats As String
+    Dim i As Long, j As Long
+    Dim rowCount As Long, colCount As Long
+    
+    rowCount = UBound(dataArray, 1) - LBound(dataArray, 1) + 1
+    colCount = UBound(dataArray, 2) - LBound(dataArray, 2) + 1
+    
+    ' Extract headers
+    For j = LBound(dataArray, 2) To UBound(dataArray, 2)
+        If j > LBound(dataArray, 2) Then headers = headers & ", "
+        headers = headers & CStr(dataArray(LBound(dataArray, 1), j))
+    Next j
+    
+    ' Extract sample data (first 5 rows)
+    For i = LBound(dataArray, 1) + 1 To Application.Min(LBound(dataArray, 1) + 5, UBound(dataArray, 1))
+        sampleData = sampleData & "Row " & (i - LBound(dataArray, 1)) & ": "
+        For j = LBound(dataArray, 2) To UBound(dataArray, 2)
+            If j > LBound(dataArray, 2) Then sampleData = sampleData & ", "
+            sampleData = sampleData & CStr(dataArray(i, j))
+        Next j
+        sampleData = sampleData & vbCrLf
+    Next i
+    
+    ' Build comprehensive Copilot prompt
+    prompt = "You are an advanced AI data analyst like GitHub Copilot for Excel. " & _
+             "Provide comprehensive, actionable insights for this dataset." & vbCrLf & vbCrLf
+    
+    prompt = prompt & "DATASET OVERVIEW:" & vbCrLf
+    prompt = prompt & "- Rows: " & (rowCount - 1) & vbCrLf
+    prompt = prompt & "- Columns: " & colCount & vbCrLf
+    prompt = prompt & "- Headers: " & headers & vbCrLf & vbCrLf
+    
+    prompt = prompt & "SAMPLE DATA:" & vbCrLf & sampleData & vbCrLf
+    
+    prompt = prompt & "PROVIDE COPILOT-STYLE ANALYSIS INCLUDING:" & vbCrLf
+    prompt = prompt & "1. 📊 KEY INSIGHTS & PATTERNS" & vbCrLf
+    prompt = prompt & "2. 🎯 BUSINESS RECOMMENDATIONS" & vbCrLf
+    prompt = prompt & "3. 📈 TREND ANALYSIS" & vbCrLf
+    prompt = prompt & "4. ⚠️ ANOMALIES & OUTLIERS" & vbCrLf
+    prompt = prompt & "5. 🔮 PREDICTIVE INSIGHTS" & vbCrLf
+    prompt = prompt & "6. 💡 OPTIMIZATION SUGGESTIONS" & vbCrLf
+    prompt = prompt & "7. 📋 NEXT STEPS & ACTION ITEMS" & vbCrLf & vbCrLf
+    
+    prompt = prompt & "Format your response like GitHub Copilot: clear, actionable, with specific insights and recommendations."
+    
+    BuildCopilotPrompt = prompt
+    
+    Exit Function
+    
+ErrorHandler:
+    BuildCopilotPrompt = "Error building Copilot prompt: " & Err.Description
+End Function
+
+' Format Copilot Response
+Private Function FormatCopilotResponse(response As String, rowCount As Long, colCount As Long) As String
+    Dim formattedResponse As String
+    
+    formattedResponse = "🤖 GITHUB COPILOT-STYLE ANALYSIS" & vbCrLf & String(60, "=") & vbCrLf & vbCrLf
+    formattedResponse = formattedResponse & "📊 DATASET: " & Format(rowCount, "#,##0") & " rows × " & colCount & " columns" & vbCrLf
+    formattedResponse = formattedResponse & "🧠 AI MODEL: Advanced Reasoning" & vbCrLf
+    formattedResponse = formattedResponse & "⏰ GENERATED: " & Format(Now(), "yyyy-mm-dd hh:mm:ss") & vbCrLf
+    formattedResponse = formattedResponse & String(60, "=") & vbCrLf & vbCrLf
+    formattedResponse = formattedResponse & response & vbCrLf & vbCrLf
+    formattedResponse = formattedResponse & String(60, "-") & vbCrLf
+    formattedResponse = formattedResponse & "💡 This analysis was generated using advanced AI reasoning models" & vbCrLf
+    formattedResponse = formattedResponse & "   similar to GitHub Copilot's analytical capabilities."
+    
+    FormatCopilotResponse = formattedResponse
+End Function
+
+' Write Copilot Results to Sheet
+Private Sub WriteCopilotResultsToSheet(copilotResult As String, rowCount As Long, colCount As Long)
+    On Error GoTo ErrorHandler
+    
+    Dim ws As Worksheet
+    Dim sheetName As String
+    
+    ' Create unique sheet name
+    sheetName = "Copilot_Analysis_" & Format(Now(), "hhmmss")
+    
+    ' Create new sheet
+    On Error Resume Next
+    Set ws = ActiveWorkbook.Worksheets.Add
+    If Err.Number <> 0 Then
+        On Error GoTo ErrorHandler
+        Set ws = ActiveSheet
+        MsgBox "Using current sheet for Copilot results", vbInformation
+    End If
+    On Error GoTo ErrorHandler
+    
+    ' Set sheet name
+    On Error Resume Next
+    ws.Name = sheetName
+    On Error GoTo ErrorHandler
+    
+    ' Write results with rich formatting
+    ws.Range("A1").Value = copilotResult
+    
+    ' Format the sheet like GitHub Copilot
+    With ws.Columns(1)
+        .Font.Name = "Segoe UI"
+        .Font.Size = 11
+        .WrapText = True
+        .ColumnWidth = 120
+    End With
+    
+    ' Add Copilot-style header formatting
+    With ws.Range("A1:A5")
+        .Font.Bold = True
+        .Font.Color = RGB(0, 120, 215) ' Microsoft blue
+        .Interior.Color = RGB(248, 249, 250) ' Light gray background
+    End With
+    
+    ' Activate sheet
+    ws.Activate
+    ws.Range("A1").Select
+    
+    Exit Sub
+    
+ErrorHandler:
+    ' Fallback to current sheet
+    On Error Resume Next
+    ActiveSheet.Range("A1").Value = "Copilot Analysis Results:"
+    ActiveSheet.Range("A2").Value = copilotResult
+    MsgBox "Copilot results written to current sheet", vbInformation
 End Sub
