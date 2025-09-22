@@ -6,12 +6,12 @@
 Option Explicit
 
 ' Configuration - UPDATE THIS WITH YOUR EC2 IP
-Private Const OLLAMA_SERVER As String = "http://YOUR_EC2_IP:11434"
+Private Const OLLAMA_SERVER As String = "http://localhost:11434"
 Private Const DEFAULT_MODEL As String = "qwen2.5:latest"
 
-' Advanced AI Models Configuration
-Private Const THINKING_MODEL As String = "deepseek-r1:latest"
-Private Const COPILOT_MODEL As String = "qwen2.5:32b"
+' Advanced AI Models Configuration  
+Private Const THINKING_MODEL As String = "qwen2.5:latest"
+Private Const COPILOT_MODEL As String = "qwen2.5:latest"
 Private Const CHART_MODEL As String = "qwen2.5:latest"
 
 ' Enterprise settings
@@ -33,14 +33,91 @@ Sub Auto_Open()
     thinkingModel = THINKING_MODEL
     copilotModel = COPILOT_MODEL
     
-    MsgBox "🚀 INTERACTIVE ENTERPRISE Excel-Ollama Plugin loaded!" & vbCrLf & vbCrLf & _
-           "✅ Fixed data selection handling" & vbCrLf & _
-           "✅ Interactive chart generation" & vbCrLf & _
-           "✅ Sample data generator" & vbCrLf & _
-           "✅ Advanced AI models support" & vbCrLf & vbCrLf & _
-           "Server: " & serverUrl & vbCrLf & _
-           "Default Model: " & currentModel, vbInformation, "Interactive Enterprise Plugin"
+    ' Check if server URL needs configuration
+    If InStr(serverUrl, "YOUR_EC2_IP") > 0 Or InStr(serverUrl, "localhost") > 0 Then
+        If MsgBox("🚀 INTERACTIVE ENTERPRISE Excel-Ollama Plugin loaded!" & vbCrLf & vbCrLf & _
+                  "⚠️ Server Configuration Needed" & vbCrLf & _
+                  "Current: " & serverUrl & vbCrLf & vbCrLf & _
+                  "Would you like to configure your Ollama server now?", _
+                  vbYesNo + vbQuestion, "Server Configuration") = vbYes Then
+            Call ConfigureServerURL()
+        End If
+    Else
+        MsgBox "🚀 INTERACTIVE ENTERPRISE Excel-Ollama Plugin loaded!" & vbCrLf & vbCrLf & _
+               "✅ Fixed data selection handling" & vbCrLf & _
+               "✅ Interactive chart generation" & vbCrLf & _
+               "✅ Sample data generator" & vbCrLf & _
+               "✅ Advanced AI models support" & vbCrLf & vbCrLf & _
+               "Server: " & serverUrl & vbCrLf & _
+               "Default Model: " & currentModel, vbInformation, "Interactive Enterprise Plugin"
+    End If
 End Sub
+
+' Configure Server URL
+Public Sub ConfigureServerURL()
+    On Error GoTo ErrorHandler
+    
+    Dim newServerUrl As String
+    Dim testResult As String
+    
+    newServerUrl = InputBox("🔧 Configure Ollama Server URL:" & vbCrLf & vbCrLf & _
+                           "Examples:" & vbCrLf & _
+                           "• http://localhost:11434 (local installation)" & vbCrLf & _
+                           "• http://192.168.1.100:11434 (local network)" & vbCrLf & _
+                           "• http://your-ec2-ip:11434 (AWS EC2)" & vbCrLf & vbCrLf & _
+                           "Enter your Ollama server URL:", _
+                           "Server Configuration", serverUrl)
+    
+    If newServerUrl <> "" And newServerUrl <> "False" Then
+        ' Update server URL
+        serverUrl = newServerUrl
+        
+        ' Test connection
+        testResult = TestServerConnection()
+        
+        If InStr(testResult, "Success") > 0 Then
+            MsgBox "✅ Server Configuration Successful!" & vbCrLf & vbCrLf & _
+                   "Server: " & serverUrl & vbCrLf & _
+                   "Status: " & testResult, vbInformation, "Configuration Complete"
+        Else
+            MsgBox "⚠️ Server Configuration Warning" & vbCrLf & vbCrLf & _
+                   "Server: " & serverUrl & vbCrLf & _
+                   "Status: " & testResult & vbCrLf & vbCrLf & _
+                   "You can still use the plugin, but check your server.", _
+                   vbExclamation, "Configuration Warning"
+        End If
+    End If
+    
+    Exit Sub
+    
+ErrorHandler:
+    MsgBox "Error configuring server: " & Err.Description, vbCritical, "Configuration Error"
+End Sub
+
+' Test Server Connection
+Private Function TestServerConnection() As String
+    On Error GoTo ErrorHandler
+    
+    Dim http As Object
+    Dim url As String
+    
+    Set http = CreateObject("MSXML2.XMLHTTP")
+    url = serverUrl & "/api/tags"
+    
+    http.Open "GET", url, False
+    http.send
+    
+    If http.Status = 200 Then
+        TestServerConnection = "Success - Server is running"
+    Else
+        TestServerConnection = "HTTP Error " & http.Status & ": " & http.statusText
+    End If
+    
+    Exit Function
+    
+ErrorHandler:
+    TestServerConnection = "Connection Error: " & Err.Description
+End Function
 
 ' ============================================================================
 ' SAMPLE DATA GENERATOR - NEW FEATURE
@@ -1319,11 +1396,18 @@ Private Function BuildSimpleQuestionPromptFixed(dataArray As Variant, question A
         sampleData = sampleData & vbCrLf
     Next i
     
-    prompt = "ANALYZING REAL EXCEL DATA FROM RANGE " & rangeAddress & ":" & vbCrLf & vbCrLf
-    prompt = prompt & "Data: " & (rowCount - 1) & " rows with columns: " & headers & vbCrLf & vbCrLf
-    prompt = prompt & "Sample data from your selection:" & vbCrLf & sampleData & vbCrLf
-    prompt = prompt & "Question: " & question & vbCrLf & vbCrLf
-    prompt = prompt & "Please analyze the ACTUAL data provided and give a specific answer based on the real values and patterns you see."
+    prompt = "🔍 ANALYZING YOUR ACTUAL EXCEL DATA FROM RANGE " & rangeAddress & ":" & vbCrLf & vbCrLf
+    prompt = prompt & "📊 DATASET DETAILS:" & vbCrLf
+    prompt = prompt & "• Total rows: " & (rowCount - 1) & " (excluding header)" & vbCrLf
+    prompt = prompt & "• Columns: " & headers & vbCrLf & vbCrLf
+    prompt = prompt & "📋 ACTUAL DATA FROM YOUR SELECTION:" & vbCrLf & sampleData & vbCrLf
+    prompt = prompt & "❓ YOUR QUESTION: " & question & vbCrLf & vbCrLf
+    prompt = prompt & "🎯 INSTRUCTIONS:" & vbCrLf
+    prompt = prompt & "• Analyze ONLY the actual data values shown above" & vbCrLf
+    prompt = prompt & "• Do NOT create sample or hypothetical data" & vbCrLf
+    prompt = prompt & "• Reference specific values and patterns from the real data" & vbCrLf
+    prompt = prompt & "• Give concrete insights based on what you actually see" & vbCrLf & vbCrLf
+    prompt = prompt & "Please provide your analysis based exclusively on the real data provided above."
     
     BuildSimpleQuestionPromptFixed = prompt
     
@@ -1664,7 +1748,8 @@ Public Sub ShowInteractiveHelp()
     helpText = helpText & "• AskAdvancedQuestionFixed - AI analysis of YOUR data" & vbCrLf
     helpText = helpText & "• DoCopilotAnalysis - Comprehensive Copilot-style insights" & vbCrLf
     helpText = helpText & "• GenerateInteractiveChart - Choose your chart type" & vbCrLf
-    helpText = helpText & "• ConfigureAdvancedModels - Setup AI models" & vbCrLf & vbCrLf
+    helpText = helpText & "• ConfigureServerURL - Setup server connection" & vbCrLf
+    helpText = helpText & "• QuickTest - Test your setup" & vbCrLf & vbCrLf
     helpText = helpText & "📊 SAMPLE DATA TYPES:" & vbCrLf
     helpText = helpText & "• sales - Sales data with trends" & vbCrLf
     helpText = helpText & "• financial - Financial performance" & vbCrLf
@@ -1680,6 +1765,54 @@ Public Sub ShowInteractiveHelp()
     helpText = helpText & "4. Run GenerateInteractiveChart for visualization"
     
     MsgBox helpText, vbInformation, "Interactive Plugin Help"
+End Sub
+
+' Quick Test Function
+Public Sub QuickTest()
+    On Error GoTo ErrorHandler
+    
+    Dim testPrompt As String
+    Dim response As String
+    
+    ' Test server connection first
+    Dim connectionTest As String
+    connectionTest = TestServerConnection()
+    
+    If InStr(connectionTest, "Success") = 0 Then
+        MsgBox "❌ Server Connection Failed" & vbCrLf & vbCrLf & _
+               "Server: " & serverUrl & vbCrLf & _
+               "Error: " & connectionTest & vbCrLf & vbCrLf & _
+               "Please run ConfigureServerURL to fix this.", _
+               vbCritical, "Connection Test Failed"
+        Exit Sub
+    End If
+    
+    ' Test AI model
+    testPrompt = "Hello! Please respond with 'AI is working correctly' to confirm the connection."
+    
+    MsgBox "🧪 Testing AI Connection..." & vbCrLf & vbCrLf & _
+           "Server: " & serverUrl & vbCrLf & _
+           "Model: " & currentModel, vbInformation, "Running Test"
+    
+    response = CallOllamaAPIReal(testPrompt)
+    
+    If InStr(LCase(response), "error") > 0 Then
+        MsgBox "❌ AI Test Failed" & vbCrLf & vbCrLf & _
+               "Response: " & Left(response, 200) & vbCrLf & vbCrLf & _
+               "Check if the model '" & currentModel & "' is installed.", _
+               vbCritical, "AI Test Failed"
+    Else
+        MsgBox "✅ All Tests Passed!" & vbCrLf & vbCrLf & _
+               "Server: Connected" & vbCrLf & _
+               "AI Model: Working" & vbCrLf & vbCrLf & _
+               "Response: " & Left(response, 100) & "..." & vbCrLf & vbCrLf & _
+               "Your plugin is ready to use!", vbInformation, "Test Successful"
+    End If
+    
+    Exit Sub
+    
+ErrorHandler:
+    MsgBox "Test Error: " & Err.Description, vbCritical, "Test Error"
 End Sub
 
 ' GitHub Copilot-like Analysis - COMPREHENSIVE AI INSIGHTS
@@ -1746,18 +1879,9 @@ Private Function PerformCopilotAnalysis(selectedRange As Range) As String
     ' Build comprehensive Copilot-style prompt
     copilotPrompt = BuildCopilotPrompt(dataArray)
     
-    ' Use thinking model for deep analysis (fallback to standard if not available)
-    On Error Resume Next
-    rawResponse = CallOllamaWithThinking(copilotPrompt, "qwen2.5:14b")
-    If Err.Number <> 0 Then
-        On Error GoTo ErrorHandler
-        rawResponse = CallOllamaAPIReal(copilotPrompt)
-        cleanResponse = rawResponse
-    Else
-        ' Clean response (remove thinking process)
-        cleanResponse = ExtractFinalAnswer(rawResponse)
-    End If
-    On Error GoTo ErrorHandler
+    ' Use standard model for analysis
+    rawResponse = CallOllamaAPIReal(copilotPrompt)
+    cleanResponse = rawResponse
     
     ' Format as Copilot-style response
     PerformCopilotAnalysis = FormatCopilotResponse(cleanResponse, selectedRange.Rows.Count, selectedRange.Columns.Count)
@@ -1799,26 +1923,26 @@ Private Function BuildCopilotPrompt(dataArray As Variant) As String
     Next i
     
     ' Build comprehensive Copilot prompt
-    prompt = "You are an advanced AI data analyst like GitHub Copilot for Excel. " & _
-             "Provide comprehensive, actionable insights for this dataset." & vbCrLf & vbCrLf
+    prompt = "🤖 You are GitHub Copilot for Excel - analyze the ACTUAL user data below." & vbCrLf & vbCrLf
     
-    prompt = prompt & "DATASET OVERVIEW:" & vbCrLf
-    prompt = prompt & "- Rows: " & (rowCount - 1) & vbCrLf
-    prompt = prompt & "- Columns: " & colCount & vbCrLf
-    prompt = prompt & "- Headers: " & headers & vbCrLf & vbCrLf
+    prompt = prompt & "📊 REAL DATASET FROM USER'S EXCEL:" & vbCrLf
+    prompt = prompt & "• Data Rows: " & (rowCount - 1) & " (excluding header)" & vbCrLf
+    prompt = prompt & "• Columns: " & colCount & vbCrLf
+    prompt = prompt & "• Column Names: " & headers & vbCrLf & vbCrLf
     
-    prompt = prompt & "SAMPLE DATA:" & vbCrLf & sampleData & vbCrLf
+    prompt = prompt & "📋 ACTUAL DATA VALUES:" & vbCrLf & sampleData & vbCrLf
     
-    prompt = prompt & "PROVIDE COPILOT-STYLE ANALYSIS INCLUDING:" & vbCrLf
-    prompt = prompt & "1. 📊 KEY INSIGHTS & PATTERNS" & vbCrLf
-    prompt = prompt & "2. 🎯 BUSINESS RECOMMENDATIONS" & vbCrLf
-    prompt = prompt & "3. 📈 TREND ANALYSIS" & vbCrLf
-    prompt = prompt & "4. ⚠️ ANOMALIES & OUTLIERS" & vbCrLf
-    prompt = prompt & "5. 🔮 PREDICTIVE INSIGHTS" & vbCrLf
-    prompt = prompt & "6. 💡 OPTIMIZATION SUGGESTIONS" & vbCrLf
+    prompt = prompt & "🎯 PROVIDE COPILOT-STYLE ANALYSIS OF THIS REAL DATA:" & vbCrLf
+    prompt = prompt & "1. 📊 KEY INSIGHTS & PATTERNS (from actual values)" & vbCrLf
+    prompt = prompt & "2. 🎯 BUSINESS RECOMMENDATIONS (based on real data)" & vbCrLf
+    prompt = prompt & "3. 📈 TREND ANALYSIS (using actual numbers)" & vbCrLf
+    prompt = prompt & "4. ⚠️ ANOMALIES & OUTLIERS (specific values)" & vbCrLf
+    prompt = prompt & "5. 🔮 PREDICTIVE INSIGHTS (based on patterns)" & vbCrLf
+    prompt = prompt & "6. 💡 OPTIMIZATION SUGGESTIONS (actionable)" & vbCrLf
     prompt = prompt & "7. 📋 NEXT STEPS & ACTION ITEMS" & vbCrLf & vbCrLf
     
-    prompt = prompt & "Format your response like GitHub Copilot: clear, actionable, with specific insights and recommendations."
+    prompt = prompt & "⚠️ CRITICAL: Analyze ONLY the actual data shown above. Do NOT create sample data. " & _
+             "Reference specific values and provide insights based on what you actually see in the real data."
     
     BuildCopilotPrompt = prompt
     
